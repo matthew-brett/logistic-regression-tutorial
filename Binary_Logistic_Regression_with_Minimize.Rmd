@@ -323,9 +323,23 @@ For the moment, please don't worry about how we came by this line, we will come 
 The new prediction line is in gold.
 
 ```{python tags=c("hide-cell")}
-# This is the machinery for making the not-straight line for the plot
-# below.  We will come on that machinery soon.  For now please ignore
-# this code, and concentrate on the plots below.
+# This is the machinery for making the sigmoid line of the plots below.  We
+# will come on that machinery soon.  For now please ignore this code, and
+# concentrate on the plots below.
+
+def logit(y):
+    """ Apply logit transformation
+    """
+    odds_ratios = y / (1 - y)
+    return np.log(odds_ratios)
+
+
+def inv_logit(y):
+    """ Reverse logit transformation
+    """
+    odds_ratios = np.exp(y)  # Reverse the log operation.
+    return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation.
+
 
 def params2pps(intercept_and_slope, x):
     """ Calculate predicted probabilities of 1 for each observation.
@@ -334,12 +348,10 @@ def params2pps(intercept_and_slope, x):
     intercept, slope = intercept_and_slope
     # Predicted log odds of being in class 1.
     predicted_log_odds = intercept + slope * x
-    # To get the odds, we invert the log operation with exp
-    predicted_odds = np.exp(predicted_log_odds)
-    # Predicted probability of being in class 1.
-    return predicted_odds / (1 + predicted_odds)
+    return inv_logit(predicted_log_odds)
 
-nice_c_s = [-7, 0.8]
+
+nice_c_s = [-7, 0.8]  # Some plausible values for intercept and slope.
 predictions_new = params2pps(nice_c_s, hemoglobin)
 ```
 
@@ -358,13 +370,13 @@ plt.plot(fine_x, fine_y_sigmoid, linewidth=1, linestyle=':')
 plt.legend();
 ```
 
-This new not-straight line seems to have much to recommend it.  This shape of
+The new not-straight line seems to have much to recommend it.  This shape of
 line is called "sigmoid", from the name of the Greek letter "s".  The sigmoid
 prediction here never goes above 1 or below 0, so its values are always in the
 range of the `appetite_d` data it is trying to predict.  It climbs steeply to a
-prediction of 1, and plateaus there, as we get to the threshold of about
-hemoglobin of around 12.5, at which every patient does seem to have "good"
-appetite (`appetite_d` of 1).
+prediction of 1, and plateaus there, as we get to the threshold of hemoglobin
+around 12.5, at which every patient does seem to have "good" appetite
+(`appetite_d` of 1).
 
 We can think of the values from the sigmoid curve as being *predicted
 probabilities*.  For example, at a `hemoglobin` value of 10, the curve gives a
@@ -378,20 +390,20 @@ Now let us say that we would prefer to use this kind of sigmoid line to predict
 straight line - for example, in the `ss_any_line` function.   How can we get
 minimize to predict from a family of sigmoid curves, as here?  Is there a way
 of transforming a sigmoid curve like the one here, with y values from 0 to 1,
-to a straight line, where the y values can vary “from large negative to large
+to a straight line, where the y values can vary from large negative to large
 positive.  We would like to do such a conversion, so we have a slope and
 intercept that `minimize` can work with easily.
 
 The answer, you can imagine, is "yes" - we can go from our sigmoid 0 / 1 curve
-to a straight line with unconstrained y values, in two fairly simple steps.
-The next sections will cover those steps.  The two steps are:
+to a straight line with unconstrained y values, in two fairly simple steps. The
+next sections will cover those steps.  The two steps are:
 
 * Convert the 0 / 1 *probability* predictions to 0-to-large positive
   predictions of the *odds ratio*.  The odds-ratio can vary from 0 to very
   large positive.
 * Apply the *logarithm* function to convert the 0-to-very-large-positive
   odds-ratio predictions to log odds-ratio predictions, which can vary from
-  large negative to large positive.
+  very large negative to very large positive.
 
 These two transformations together are called the *log-odds* or
 [logit](https://en.wikipedia.org/wiki/Logit) transformation.  *Logistical
@@ -425,10 +437,10 @@ plt.xlabel('Hemoglobin')
 plt.ylabel('Odds-ratio');
 ```
 
-Notice that this is an exponential graph, where the y values increase more and
-more steeply as the x values increase.  We can turn exponential lines like this
-one into straight lines, using the *logarithm* function, the next stage of the
-logit transformation:
+Notice that this is an *exponential* graph, where the y values increase more
+and more steeply as the x values increase.  We can turn exponential lines like
+this one into straight lines, using the *logarithm* function, the next stage of
+the logit transformation:
 
 ```{python}
 predictions_or_log = np.log(predictions_or)
@@ -436,7 +448,7 @@ plt.scatter(hemoglobin, predictions_or_log,
             color='gold')
 fine_y_or_log = np.log(fine_y_or)
 plt.plot(fine_x, fine_y_or_log, linewidth=1, linestyle=':')
-plt.title('Log odds-ratio prediction')
+plt.title('Logit prediction')
 plt.xlabel('Hemoglobin')
 plt.ylabel('Log odds-ratio');
 ```
