@@ -467,132 +467,267 @@ class* (0 or 1).
 In this case, we are interested in the probability of a patient having "good"
 appetite, predicted from the patient's hemoglobin.
 
-From the graph above, it looks as those there is a higher probability of having
-good appetite if you have a higher hemoglobin . We can see this because a
-higher proportion of the blue dots (representing patients with good appetite)
-occur at higher values of hemoglobin.
+We can think of probability as the *proportion of times* we expect to see a
+particular outcome.
 
-You'll know that probability is:
+For example, there are 139 patients with "good" appetite in this data frame,
+and 158 patients in total.  If you were to repeatedly draw a single patient at
+random from the data frame, and record their `Appetite`, then we expect the proportion of "good" values in the long run, to be 139 / 158 --- about 0.88.  That is the same as saying there is a probability of 0.88 of a randomly-drawn patient of having a "good" appetite.
 
-$$ \frac{\text{number of events of interest}}{\text{total number of events}} $$
-<!-- #endregion -->
+Because the patient's appetite can only be "good" or "poor", and because the
+probabilities of all possible options have to add up to 1, the probability of
+the patient having a "poor" appetite is 1 - 0.88 --- about 0.12.
 
-If we want to know how many people have anemia out of a group of 100 people, the probability of having anemia is:
+So, the probability can express the *proportion of times* we expect to see some
+*event of interest* - in our case, the event of interest is "good" in the
+`Appetite` column.
 
-$$ \frac{\text{number of people with anemia}}{\text{total number of people}} $$
+We can think of this same information as an *odds ratio*.
 
+We often express probabilities as odds ratios.  For example, we might say that
+the odds are 5 to 1 that it will rain today.   We mean that it is five times
+more likely that it will rain today than that it will not rain today.   On
+another day we could estimate that the odds are 0.5 to 1 that it will rain
+today, meaning that it is twice as likely *not* to rain, as it is to rain.
 
-So if there are 100 people, and 30 of them have anemia, the probability of having anemia (in that group) is:
+The odds ratio is the number of times we expect to see the event of interest
+(e.g. rain) for every time we expect to see the event of no interest (not
+rain).
 
-$$ \frac{\text{number of people with anemia}}{\text{total number of people}} = \frac{\text{30}}{\text{100}}  $$
+This is just a way of saying a probability in a different way, and we can convert easily between probabilities and odds ratios.
 
-
-The odds of an event is a related, but different, concept. The odds are:
-
-$$ \frac{\text{number of events of interest}}{\text{number of events NOT of interest}} $$
-
-
-If we want to know how many people have anemia out of 100 people, the odds are:
-
-$$ \frac{\text{number of people WITH anemia}}{\text{number of people who WITHOUT anemia}} $$
-
-
-So if there are 100 people, and 30 of them have anemia, the odds of having anemia (in that group) are:
-    
-$$ \frac{\text{number of people WITH anemia}}{\text{number of people WITHOUT anemia}} = \frac{\text{30}}{\text{70}}  $$
-
-# The Logistic Transformation
-
-What we need is some mathematical wizardry that will allow us to use the linear regression formula, but to only generate predicted values that fall between 0 and 1. This prediction should represent the probability, based on the predictor variable, of being in the outcome class we dummy coded as 1.
-
-It turns out there is a way to do this. Though bizarre it may sound, we will need the number `e` (https://en.wikipedia.org/wiki/E_(mathematical_constant).
-
-This number is represented in numpy, and can be called using the command below.
-<!-- #endregion -->
+To convert from a probability to an odds ratio, we remember that the odds ratio is the number of times we expect to see the event of interest for every time we expect to see the event of no interest.   This is the probability (proportion) for the event of interest, divided by the probability (proportion) of the event of no interest.  Say the probability p is some value (it could be any value):
 
 ```{python}
-np.e
+# Our proportion of interest.
+p = 0.88
 ```
 
-We can use the linear regression formula, along with `e`, to predict the odds of being anemic. The formula is below - let's focus on <i> how the formula works </i> rather than <i> why </i> the formula works .
-    
-$$ \text{predicted odds of anemia} = e^{\text{intercept + slope * Red Blood Cell Count}} $$
-
-OK, so far so good, we raise `e` to the power of our linear regression predictions and we get a prediction of the odds of anemia for each observation. But there is still a problem - these odds are not limited to fall between 0 and 1:
+Then the equivalent odds ratio `odds_ratio` is:
 
 ```{python}
-odds_anemia = np.e**predicted_lin_reg
-
-odds_anemia
+# Odds ratio is proportion of interest, divided by proportion of no interest.
+odds_ratio = p / (1 - p)
+odds_ratio
 ```
 
-Fortunately, through some further mathematical wizardry, we can convert these odds to probabilities (which do fall between 0 and 1). The formula for doing this is below. 
+Notice the odds ratio is greater than one, because `p` was greater than 0.5. An
+odds ratio of greater than one means the event of interest is more likely to
+happen than the alternative.  An odds ratio of less than one means p was less
+than 0.5, and the event of interest is less likely to happen than the
+alternative.   A p value of 0 gives an odds ratio of 0.  A p value of 1 gives:
 
-Again, let's focus on what the formula does and how it works, rather than why it works:
-
-$$ \text{predicted probability of anemia} = \frac{e^{\text{intercept + slope * Red Blood Cell Count}}}{1 + e^{\text{intercept + slope * Red Blood Cell Count}}}  $$
-
-Let's use that formula to get the predicted probabilities.
-
-```{python}
-prob_anemia = odds_anemia/(1 + odds_anemia)
-
-prob_anemia
+```{python tags=c("raises-exception")}
+1 / (1 - 1)
 ```
 
-Let's just check the predicted probabilities do all, in fact, fall between 0 and 1:
+This is either an error (as it is here when we do the calculation with Python's standard integers) or Infinity, when we do the calculation with Numpy:
 
 ```{python}
-print('There are', np.count_nonzero(prob_anemia < 0), 'predicted probabilities less than 0.')  
-print('There are', np.count_nonzero(prob_anemia > 1), 'predicted probabilities greater than 1.')  
+one = np.array(1)  # Make an Numpy array containing 1
+one / (one - one)
 ```
 
-Let's plot these predicted probabilities along with the actual data:
+We can also convert from odds ratios to p values.  Remember the odds ratio is
+the number of times we expect to see the event of interest, divided by the
+number of times we expect to see the event of no interest.  The probability is
+the proportion of all events that are events of interest.  We can read an
+`odds_ratio` of - say - 2.5 as "the chances are 2.5 to 1".  To get the
+probability we divide the number of times we expect to see the event of
+interest - here 2.5 - by the number of events in total.  The number of events
+in total is just the number of events of interest - here 2.5 - plus the number
+of events of no interest - here 1.  So:
 
 ```{python}
-# do not worry about this code, it just generates the graph
-plt.figure(figsize = (10, 4))
-plt.scatter(hgb_app['Hemoglobin'], hgb_app['appetite_dummy'], label = 'not anemic')
-plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'], 
-                             hgb_app[hgb_app['Appetite'] == 'yes']['appetite_dummy'], color = 'red',
-            label = 'anemic')
-plt.scatter(hgb_app['Hemoglobin'], prob_anemia, 
-            label = 'predicted probability of anemia', color = 'orange')
+p_from_odds_ratio = odds_ratio / (odds_ratio + 1)
+p_from_odds_ratio
+```
+
+Summary - convert probabilities to odds ratios with:
+
+```{python}
+odds_ratio = p / (1 - p)
+```
+
+Convert odds ratios to probabilities with:
+
+```{python}
+p = odds_ratio / (odds_ratio + 1)
+```
+
+As you've seen, when we apply the conversion above, to convert the probability values to odds ratios for our appetite predications, we get the following:
+
+```{python tags=c("hide-cell")}
+predictions_or = predictions_new / (1 - predictions_new)
+plt.scatter(hemoglobin, predictions_or,
+            color='gold')
+fine_y_or = fine_y_sigmoid / (1 - fine_y_sigmoid)
+plt.plot(fine_x, fine_y_or, linewidth=1, linestyle=':')
+plt.title('Odds-ratio prediction')
 plt.xlabel('Hemoglobin')
-plt.ylabel('Anemia \n(0 = no, 1 = yes)')
-plt.legend()
-plt.yticks([0,0.5, 1]);
+plt.ylabel('Odds-ratio');
 ```
 
-<!-- #region -->
-That looks better, the predicted probabilities all fall between 0 and 1. And the predictions still capture the general trend that the probability of having anemia is higher at lower values of Red Blood Cell Count.
+Notice that the odds ratios we found vary from very close to 0 (for p value
+predictions very close to 0) to very large (for p values very close to 1).
 
-However, to get these probabilities we used the slope and intercept we obtained from linear regression i.e. from minimizing the sum of squared prediction errors.
-
-Using the sum of squared prediction error as the function we minimize is <b> not a good idea when we are trying to predict probabilities. </b>
-
-To work well, `minimize` needs to work on a function which is <i> convex </i>. This is best illustrated graphically.
-
-On the graphs below, the sum of squared prediction error is shown on the y axis. The potential values of the slope we may include in our model are shown on the x axis.
-
-The graph for linear regression is shown on the left; the graph for logistic regression is shown on the right.
-
-For normal linear regression - i.e. without using `e` to do the transformations we just did - there is a single lowest point on the graph which shows the relationship between the slope value (x axis) and the sum of squared prediction error (y axis). 
-
-This lowest point occurs for the best fitting slope. `minimize` can easily find this point, because it is the lowest point out of all the possible slopes we could use.
+Notice too that our graph looks exponential, and we want it to be a straight
+line.   Our next step is to apply a *logarithm* transformation.
 
 
-Conversely, when we use `e` to apply the transformations above (in order to predict probabilities), the graph for the sum of squared prediction errors looks like the graph on the right hand side below. 
+# A quick refresher on logarithms
 
-`minimize` can easily get 'stuck' in one of the other low points, which is not the lowest possible point. This means we may get estimates of the slope and intercept which do not give the lowest possible sum of the squared prediction error.
-<!-- #endregion -->
+Don't worry - you don't need to do anything fancy with logarithms here.  You
+don't even need to fully understand this quick refresher.  In practice, all you
+need to know about logarithms for this section is that they make straight line graphs from exponential graphs.
 
-![image-3.png](attachment:image-3.png)
+That said, here is a whirlwind tour of logarithms.
 
-(image adapted from: 
-https://medium.com/analytics-vidhya/derivative-of-log-loss-function-for-logistic-regression-9b832f025c2d)
+Logarithms ask the question of a number - "what exponent do I need in order to
+make that number"?
 
-<!-- #region -->
+For example, consider the number:
+
+```{python}
+x = 100
+```
+
+I want to write that number as 10 to the power of something - $10^y$.  $y$ is
+the *exponent* that I need for 10, to make 100.  In this case I can see that
+$y$ must be 2, because $10^2 = 100$.  If $x = 1000$ then $y = 3$ because $10^3
+= 1000$. The function `np.log10` works this out for us.  It takes the numbers
+we send it, and works out the exponent(s) it needs to apply to 10, to get those
+numbers.  For example:
+
+```{python}
+np.log10([100, 1000])
+```
+
+The exponents don't have to be whole numbers.  For example, I can calculate $10^{3.5}$:
+
+```{python}
+v = 10 ** 3.5
+v
+```
+
+`np.log10` will find this exponent for me too:
+
+```{python}
+np.log10(v)
+```
+
+and:
+
+```{python}
+L = np.log10([100, 1000, v])
+L
+```
+
+`np.log10` reverses the effect of calculating 10 to the power of some value.
+
+```{python}
+values = np.array([2, 3, 4])
+v_exp_10 = 10 ** values
+v_exp_10
+```
+
+```{python}
+# log10 reverses the effect of 10 to the power of some values, to get those
+# values back.
+np.log10(v_exp_10)
+```
+
+Similarly, if I've transformed some values with `np.log10`, I can reverse that
+transformation by taking 10 to the power of the transformed values:
+
+```{python}
+more_values = np.array([10, 15, 20])
+v_log_10 = np.log10(more_values)
+v_log_10
+```
+
+```{python}
+# Taking 10 to the power of some values, reverses the effect of log10.
+10 ** v_log_10
+```
+
+You may remember that powers can be less than 1.  For example $10^{0.5}$ is the
+square root of 10:
+
+```{python}
+print(np.sqrt(10))
+print(10 ** 0.5)
+```
+
+Therefore:
+
+```{python}
+np.log10(np.sqrt(10))
+```
+
+It is a bit difficult to think about what $10^0$ might mean, but the rule is
+that $10^0$ is equal to 1, and therefore log10 of 1 is 0:
+
+```{python}
+np.log10(1)
+```
+
+Exponents can be negative.  A negative exponent gives the equivalent calculation to taking the power to the exponent without the minus sign, and then dividing into 1 - like this:
+
+```{python}
+print('10 ** -2 equals', 10 ** -2)
+print('1 / 10 ** 2 equals', 1 / (10 ** 2))
+```
+
+Therefore, a log of a number less than 1 will be negative:
+
+```{python}
+np.log10([0.5, 0.1, 0.01])
+```
+
+But - logarithms don't know how to handle minus numbers.  For example, there is
+no exponent you can apply to 10 to get -100:
+
+```{python}
+np.log10(-100)
+```
+
+So far all our examples of logs have been calculating the exponents for 10.
+This is what `np.log10` does.  10 is called the *base* of the logarithm - the
+number that we are calculating the exponent for. `np.log10` calculates
+logarithms with base 10.
+
+The base doesn't have to be 10.  Another common option is `np.log2` where we calculate the exponent we have to apply to 2, to get the input numbers:
+
+```{python}
+np.log2([2, 4, 8, 10])
+```
+
+In fact an even more common option is to use the special number $e$ as the
+base.  This is because taking exponents or calculating logarithms with base $e$
+have some very convenient mathematical properties, that are not relevant to us
+here.  Log to the base e is so common that Numpy simply uses `np.log` to mean
+logarithm to base $e$.
+
+```{python}
+print('e', np.e)
+print('e squared', np.e ** 2)
+print('e cubed', np.e ** 3)
+```
+
+As you would expect, `np.log` returns the exponent we need to apply to $e$ to recreate the input numbers:
+
+```{python}
+np.log([np.e, np.e ** 2, np.e ** 3])
+```
+
+As for all log bases, log of 1 is 0, and numbers less than 1 give negative log
+values:
+
+```{python}
+np.log([1, 0.5, 0.1])
+```
+
 ## A different measure of prediction error
 
 To address this issue, logistic regression does not minimize the sum of the squared prediction errors like linear regression does. 
@@ -782,7 +917,7 @@ for intercept in [-6, -7, -8]:
             params2pps([intercept, 0.8], fine_x),
             linewidth=1,
             linestyle=':',
-            label=f'intercept={intercept}')
+            label='logit intercept=%d' % intercept)
 plt.title('Sigmoid probability predictions')
 plt.xlabel('Hemoglobin')
 plt.ylabel('Probability prediction')
@@ -798,7 +933,7 @@ for slope in [0.6, 0.8, 1.0]:
             params2pps([-7, slope], fine_x),
             linewidth=1,
             linestyle=':',
-            label=f'slope={slope:.1f}')
+            label='logit slope=%.1f' % slope)
 plt.title('Sigmoid probability predictions')
 plt.xlabel('Hemoglobin')
 plt.ylabel('Probability prediction')
