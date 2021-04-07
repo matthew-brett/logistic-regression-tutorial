@@ -32,6 +32,16 @@ from scipy.optimize import minimize
 This page gives some extra explanation for the
 [logistic_regression](logistic_regression) page.
 
+Here we say more about why we might prefer the Maximum Likelihood Estimate way
+of scoring potential fits to the data, to our more usual least squared error.
+If you want the gory details on this choice, see [this answer on
+StackOverflow](https://stats.stackexchange.com/a/254067). Here we look at
+whether this the sum of squares works well with minimize.  The discussion in
+this page corresponds to the "computational efficiency" section of the answer
+linked above.
+
+## The background, the data
+
 In that page we were trying to looking at the [chronic kidney disease
 dataset](../data/chronic_kidney_disease), to see if we good predict whether a
 patient had "good" appetite (as opposed to "poor" appetite) given that patient's blood hemoglobin concentration.
@@ -74,7 +84,115 @@ plot_hgb_app()
 plt.legend();
 ```
 
-We defined the functions to convert between the straight line predictions and the sigmoid predictions:
+## Linear regression - the crude approach
+
+The crude and brutal approach to predicting these values is to use simple
+least-squares regression.   We can do this in the usual way by using
+`scipy.optimize.minimize` with a function that returns the sum of squared
+error between the straight line predictions and the 0 / 1 labels.  Here's the function:
+
+```{python}
+def ss_any_line(c_s, x_values, y_values):
+    """ Cost function for sum of squares prediction error
+    """
+    # c_s is a list containing two elements, an intercept and a slope.
+    intercept, slope = c_s
+    # Values predicted from these x_values, using this intercept and slope.
+    predicted = intercept + x_values * slope
+    # Difference of prediction from the actual y values.
+    error = y_values - predicted
+    # Sum of squared error.
+    return np.sum(error ** 2)
+```
+
+Start with a guess of intercept -0.5, slope 0.1:
+
+```{python}
+# Use cost function with miminize.
+min_res_ss = minimize(ss_any_line, [-0.5, 0.1], args=(hemoglobin, appetite_d))
+min_res_ss
+```
+
+Store the slope and intercept:
+
+```{python}
+inter_ss, slope_ss = min_res_ss.x
+```
+
+Show the results:
+
+```{python tags=c("hide-cell")}
+# Do the base plot of the hemoglobin and appetite_d.
+plot_hgb_app()
+
+# A new plot on top of the old.
+predicted_ss = inter_ss + slope_ss * hemoglobin
+plt.scatter(hemoglobin, predicted_ss,
+            label='LR prediction',
+            color='orange')
+plt.title("Linear regression with sum of squares")
+# Show the legend.
+plt.legend();
+```
+
+Let us remind ourselves of how the sum of square error values change as we change the slope and the intercept.  First we hold the slope constant at a fairly bad guess of 0.1, and try different intercepts.  For each intercept we calculate the sum of squared error:
+
+```{python}
+# Intercepts to try.
+intercepts = np.linspace(-2, 2, 1000)
+n_inters = len(intercepts)
+ss_errors = np.zeros(n_inters)
+for i in np.arange(n_inters):
+    ss_errors[i] = ss_any_line([intercepts[i], 0.1], hemoglobin, appetite_d)
+plt.scatter(intercepts, ss_errors)
+plt.xlabel('intercept')
+plt.ylabel('Linear SS error')
+plt.title("Errors for different intercepts, slope 0.1')
+```
+
+Notice the very simple shape of this curve.  It is a parabola, it descends
+steeply for values far from the minimum, and more slowly as it gets closer.
+This is a curve that `minimize` finds it very easy to work with, because every
+time it tries an intercept (in this case) the slope suggest what direction to
+go next, and this suggestion is always correct.  You may also have noticed
+that this parabola shape is always the same for these simple least squares
+functions, like `ss_any_line`.
+
+Just to illustrate again, here we try holding the intercept constant at a fairly bad guess of 0.5, and vary the slopes.  Notice we get the same helpful parabola shape:
+
+```{python}
+# Slopes to try.
+slopes = np.linspace(0, 0.5, 1000)
+n_slopes = len(slopes)
+ss_errors = np.zeros(n_slopes)
+for i in np.arange(n_slopes):
+    ss_errors[i] = ss_any_line([0.5, slopes[i]], hemoglobin, appetite_d)
+plt.scatter(slopes, ss_errors)
+plt.xlabel('slope')
+plt.ylabel('Linear SS error')
+plt.title("Errors for different slopes, intercept 0.5')
+```
+
+These are plots of how the value of the cost function changes as we change the
+parameters.  The curves we see above are parabolas, and these are examples of
+curves that are [convex](https://en.wikipedia.org/wiki/Convex_function);
+convex curves like parabolas are particularly easy and quick for `minimize` to
+work with.
+
+We will see that using sum of squared error with our preferred sigmoid
+prediction curve generates cost function curves that are a lot more
+complicated, making it more difficult for `minimize` to find the best
+parameters.
+
+
+## More sophisticated - the logistic fit with least squares
+
+For the reasons you saw in the [logistic regression page](logistic
+regression), we recoil from the very simple straight line fit above, and
+prefer to use a sigmoid curve to fit the 0 / 1 labels.
+
+We defined the functions to convert between the straight line predictions that
+we want to use with `minimize` and the sigmoid predictions:
 
 ```{python}
 def inv_logit(y):
@@ -94,7 +212,6 @@ def params2pps(intercept, slope, x):
 
 This allowed us to build our sum of squares logit cost function:
 
-
 ```{python}
 def ss_logit(c_s, x_values, y_values):
     # Unpack intercept and slope into values.
@@ -107,7 +224,8 @@ def ss_logit(c_s, x_values, y_values):
     return np.sum(sigmoid_error ** 2)
 ```
 
-Then we found our sum of squares best straight line (that corresponds to a sigmoid after transformation):
+Then we found our sum of squares best straight line (that corresponds to a
+sigmoid after transformation):
 
 ```{python}
 min_res_logit = minimize(ss_logit, [-7, 0.8], args=(hemoglobin, appetite_d))
@@ -132,13 +250,6 @@ plt.scatter(hemoglobin, logit_ss_pps,
 # Show the legend.
 plt.legend();
 ```
-
-Our sigmoid prediction from sum of squares above looks convincing enough, but, is there a better way of scoring our lines, than sum of squares?
-
-If you want the gory details, see [this
-answer on StackOverflow](https://stats.stackexchange.com/a/254067). Here we
-look at whether this the sum of squares works well with minimize.  The
-discussion here corresponds to the "computational efficiency" section of the answer.
 
 In other sections of this textbook, you have calculated the sum of squares
 error for a range of slopes and intercepts.  In the simple cases we were
