@@ -125,25 +125,14 @@ Now we have the dummy (1 or 0) variable, let us use a scatter plot to look at
 the relationship between hemoglobin concentration and whether a patient has a
 good appetite.
 
-Before we do this, it is convenient to add another column to color the "good" and "poor" appetite points:
-
-```{python}
-hgb_app['appetite_color'] = 'red'
-hgb_app.loc[good_appetite, 'appetite_color'] = 'blue'
-```
-
-Now we can plot the hemoglobin values on the x axis (our predictor) against
-the appetite values on the y axis (the values to predict).
-
 ```{python tags=c("hide-cell")}
 # We will use this plotting code several times, so put into a function for
 # later use.
 
 def plot_hgb_app():
     # Build plot, add custom label.
-    hgb_app.plot.scatter('Hemoglobin', 'appetite_dummy',
-                         c='appetite_color',
-                         legend=True)
+    colors = appetite_d.replace(0, 'red').replace(1, 'blue')
+    hgb_app.plot.scatter('Hemoglobin', 'appetite_dummy', c=colors)
     plt.ylabel('Appetite\n0 = poor, 1 = good')
     plt.yticks([0,1]);  # Just label 0 and 1 on the y axis.
     # Put a custom legend on the plot.  This code is a little obscure.
@@ -341,18 +330,17 @@ def inv_logit(y):
     return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation.
 
 
-def params2pps(intercept_and_slope, x):
+def params2pps(intercept, slope, x):
     """ Calculate predicted probabilities of 1 for each observation.
     """
-    # store the intercept and slope as Python variables.
-    intercept, slope = intercept_and_slope
     # Predicted log odds of being in class 1.
     predicted_log_odds = intercept + slope * x
     return inv_logit(predicted_log_odds)
 
 
-nice_c_s = [-7, 0.8]  # Some plausible values for intercept and slope.
-predictions_new = params2pps(nice_c_s, hemoglobin)
+# Some plausible values for intercept and slope.
+nice_intercept, nice_slope = -7, 0.8
+predictions_new = params2pps(nice_intercept, nice_slope, hemoglobin)
 ```
 
 ```{python tags=c("hide-cell")}
@@ -364,7 +352,7 @@ plt.scatter(hemoglobin, predictions_new,
             label='New prediction',
             color='gold')
 # Another plot, to show the underlying line
-fine_y_sigmoid = params2pps(nice_c_s, fine_x)
+fine_y_sigmoid = params2pps(nice_intercept, nice_slope, fine_x)
 plt.plot(fine_x, fine_y_sigmoid, linewidth=1, linestyle=':')
 # Show the legend.
 plt.legend();
@@ -595,18 +583,28 @@ Our full logit transformation is therefore:
 def logit(p):
     """ Apply logit transformation to array of probabilities `p`
     """
-    odds_ratios = y / (1 - y)
+    odds_ratios = p / (1 - p)
     return np.log(odds_ratios)
 ```
 
 `np.exp` reverses (inverts) the `np.log` transformation (see the [logarithm
-refresher](logarithms_refreshed) page).  You have seen above that there is a
-simple formula to go from odds ratios to probabilities.  The transformation
-that *reverses*  (inverts) the logit transform is therefore:
+refresher](logarithms_refreshed) page):
+
+
+```{python}
+# np.exp reverses the effect of np.log.
+original_vals = np.array([1, 0.5, 3, 6, 0.1])
+vals_back = np.exp(np.log(original_vals))
+vals_back
+```
+
+You have seen above that there is a simple formula to go from odds ratios to
+probabilities.  The transformation that *reverses*  (inverts) the logit
+transform is therefore:
 
 ```{python}
 def inv_logit(v):
-    """ Reverse logit transformation on array of transformed values `v`
+    """ Reverse logit transformation on array `v`
     """
     odds_ratios = np.exp(v)  # Reverse the log operation.
     return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation.
@@ -615,19 +613,63 @@ def inv_logit(v):
 `inv_logit` takes points on a straight line, and converts them to points on a
 sigmoid.
 
-First we convince ourselves that `inv_logit` reverses `logit`, and vice versa.
+First we convince ourselves that `inv_logit` does indeed reverse the `logit`
+transform:
 
-...
+```{python}
+some_p_values = np.array([0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99])
+some_log_odds = logit(some_p_values)
+back_again = inv_logit(some_log_odds)
+print('Logit, then inv_logit returns the original data', back_again)
+```
 
-## What do the slope and intercept mean for logit
+Here's are the same sigmoid curve p-value predictions that you saw above, and
+the p-value predictions with the logit transformation applied:
 
-Changing the intercept of the logit straight line moves the corresponding
-sigmoid curve left and right on the horizontal axis:
+```{python tags=c("hide-cell")}
+fig, axes = plt.subplots(1, 2)
+ax0, ax1 = axes
+ax0.scatter(hemoglobin, predictions_new,
+            color='gold')
+ax0.set_title('Sigmoid p-value')
+ax0.set_xlabel('Hemoglobin')
+ax0.set_ylabel('p-value predictions');
+log_odds = logit(predictions_new),
+ax1.scatter(hemoglobin, log_odds,
+            color='gold')
+ax1.set_title('logit result')
+ax1.set_xlabel('Hemoglobin')
+ax1.set_ylabel('Logit transformed');
+```
+
+Next you see the logit-transformed results on the left.  The right shows the
+results of applying `inv_logit` to recover the original p values.
+
+```{python tags=c("hide-cell")}
+fig, axes = plt.subplots(1, 2)
+ax0, ax1 = axes
+ax0.scatter(hemoglobin, log_odds,
+            color='gold')
+ax0.set_title('Logit values')
+ax0.set_xlabel('Hemoglobin')
+ax0.set_ylabel('Logit transformed');
+ax1.scatter(hemoglobin, predictions_new,
+            color='gold')
+ax1.set_title('inv_logit result')
+ax1.set_xlabel('Hemoglobin')
+ax1.set_ylabel('inv_logit result');
+```
+
+## Effect of the Logit slope and intercept on the sigmoid
+
+Changing the intercept of the logit (log-odds) straight line moves the
+corresponding inverse logit sigmoid curve left and right on the horizontal
+axis:
 
 ```{python}
 for intercept in [-6, -7, -8]:
     plt.plot(fine_x,
-            params2pps([intercept, 0.8], fine_x),
+            params2pps(intercept, 0.8, fine_x),
             linewidth=1,
             linestyle=':',
             label='logit intercept=%d' % intercept)
@@ -643,7 +685,7 @@ flatter or steeper:
 ```{python}
 for slope in [0.6, 0.8, 1.0]:
     plt.plot(fine_x,
-            params2pps([-7, slope], fine_x),
+            params2pps(-7, slope, fine_x),
             linewidth=1,
             linestyle=':',
             label='logit slope=%.1f' % slope)
@@ -653,6 +695,164 @@ plt.ylabel('Probability prediction')
 plt.legend();
 ```
 
+
+## A first-pass at logistic regression
+
+You may now see how we could use `minimize` with a slope and intercept.
+
+Remember that `minimize` needs a *cost function* that takes some parameters - in our case, the intercept and slope - and returns a score, or cost for the parameters.
+
+In the `ss_any_line` cost function above, the score it returns is just the sum
+of squared prediction errors from the line.  But the cost function can do anything it likes to generate a score from the line.
+
+In our case, we're going to make a cost function that takes the intercept and
+slope, and generates predictions using the intercept and slope and `hemoglobin`
+values.  But these predictions are for the log-odds transformed values, on the
+straight line.  So the cost function then converts the predictions into p value
+predictions, on the corresponding sigmoid, and compares these predictions to the 0 / 1 values in `appetite_d`.
+
+For example, let's say I want to get a score for the intercept -7 and the slope
+0.8.
+
+First I get the straight-line predictions in the usual way:
+
+```{python}
+intercept, slope = -7, 0.8
+sl_predictions = intercept + slope * hemoglobin
+
+plt.scatter(hemoglobin, sl_predictions)
+plt.xlabel('Hemoglobin')
+plt.ylabel('Straight-line (log-odds) predictions')
+```
+
+These are predictions on the straight line, but I now need to transform them to p value (0 to 1) predictions on the sigmoid.  I use `inv_logit`:
+
+```{python}
+sigmoid_predictions = inv_logit(sl_predictions)
+
+plt.scatter(hemoglobin, sigmoid_predictions)
+plt.xlabel('Hemoglobin')
+plt.ylabel('Sigmoid (p-value) predictions')
+```
+
+Finally, I want to compare the predictions to the actual data to get a score.  One way I could do this is our good old sum of squares difference between the sigmoid p-value predictions and the 0 / 1 values:
+
+```{python}
+sigmoid_error = appetite_d - sigmoid_predictions
+sigmoid_score = np.sum(sigmoid_error ** 2)
+sigmoid_score
+```
+
+To build my cost function, first I make a function to calculate my predicted p values from a slope and intercept and the x-axis values we are predicting from:
+
+```{python}
+def params2pps(intercept, slope, x):
+    """ Calculate predicted probabilities of 1 for each observation.
+    """
+    # Predicted log odds of being in class 1.
+    predicted_log_odds = intercept + slope * x
+    return inv_logit(predicted_log_odds)
+```
+
+Next I make the cost function that minimize will use.  It must accept an array
+of parameters (an intercept and slope), and calculate the sum of squares error,
+using the predicted p-values:
+
+```{python}
+def ss_logit(c_s, x_values, y_values):
+    # Unpack intercept and slope into values.
+    intercept, slope = c_s
+    # Predicted p values on sigmoid
+    pps = params2pps(intercept, slope, x_values)
+    # Prediction errors.
+    sigmoid_error = y_values - pps
+    # Sum of squared error
+    return np.sum(sigmoid_error ** 2)
+```
+
+We check our function gives the same results as the step-by-step calculation above.
+
+```{python}
+ss_logit([-7, 0.8], hemoglobin, appetite_d)
+```
+
+Notice what is happening here.  The cost function gets the new intercept and slope to try, makes the predictions from the intercept and slope, converts the predictions to probabilities on the sigmoid, and tests those against the real labels.
+
+Now let's see the cost function in action:
+
+```{python}
+min_res_logit = minimize(ss_logit, [-7, 0.8], args=(hemoglobin, appetite_d))
+min_res_logit
+```
+
+Does this result look like it gives more convincing sigmoid predictions than
+our guessed intercept an slope of -7 and 0.8?
+
+First get the sigmoid predictions from this line:
+
+```{python}
+logit_ss_inter, logit_ss_slope = min_res_logit.x
+logit_ss_pps = params2pps(logit_ss_inter, logit_ss_slope, hemoglobin)
+```
+
+Then plot:
+
+```{python tags=c("hide-cell")}
+plot_hgb_app()
+# A new plot on top of the old.
+plt.scatter(hemoglobin, logit_ss_pps,
+            label='Logit ss solution',
+            color='gold')
+# Show the legend.
+plt.legend();
+```
+
+## A different measure of prediction error
+
+Our sigmoid prediction from sum of squares above looks convincing enough, but, is there a better way of scoring our lines, than sum of squares?
+
+In other sections of this textbook, you have calculated the sum of squares
+error for a range of slopes and intercepts.  In the simple cases we were
+looking at there, we found a very pleasant looking symmetrical parabola; when
+the intercept or slope was far from the optimal, the sum of squared error was
+very high, as we try intercepts (or slopes) nearer the optimal, the error comes
+down quickly, to a clear minimum.  That is the ideal situation for `minimize`, but we don't have the same situation here.
+
+In the next cell, we set the slope to the best sum of squares slope minimize
+found, and vary the intercept, calculating the error for different intercepts.
+There is a clear minimum, but we have lost the nice parabola shape.  For
+intercepts greater than about 5, the graph is very flat, so minimize can ran
+into trouble if it is trying values of about - say - 10 - because smallish
+changes in the intercept will make very little difference to the error.
+
+```{python}
+intercepts = np.linspace(-10, 5, 1000)
+n = len(intercepts)
+ss_errors = np.zeros(n)
+for i in np.arange(n):
+    ss_errors[i] = ss_logit([intercepts[i], logit_ss_slope],
+                            hemoglobin, appetite_d)
+
+plt.scatter(intercepts, ss_errors)
+plt.xlabel('intercept')
+plt.ylabel('Sigmoid SS error')
+```
+
+It can get even worse when trying slopes that are further away from the
+optimum.  Here it is very difficult to see the minimum for the error, when we have the slope badly wrong at -1:
+
+```{python}
+slopes = np.linspace(0, 1, 1000)
+n = len(slopes)
+ss_errors = np.zeros(n)
+for i in np.arange(n):
+    ss_errors[i] = ss_logit([logit_ss_inter, slopes[i]],
+                            hemoglobin, appetite_d)
+
+plt.scatter(intercepts, ss_errors)
+plt.xlabel('slope')
+plt.ylabel('Sigmoid SS error')
+```
 
 ## A different measure of prediction error
 
@@ -1074,12 +1274,12 @@ Just for comparison, let's also show the predictions we got when we predicted th
 # do not worry about this code, it just generates the graph
 plt.figure(figsize = (10, 4))
 plt.scatter(hgb_app['Hemoglobin'], hgb_app['appetite_dummy'], label = 'not anemic')
-plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'], 
+plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'],
                              hgb_app[hgb_app['Appetite'] == 'yes']['appetite_dummy'], color = 'red',
             label = 'anemic')
-plt.scatter(hgb_app['Hemoglobin'], predicted_probs_log_reg, 
+plt.scatter(hgb_app['Hemoglobin'], predicted_probs_log_reg,
             label = 'predicted probability of anemia (logistic regression)', color = 'green')
-plt.scatter(hgb_app['Hemoglobin'], prob_anemia, 
+plt.scatter(hgb_app['Hemoglobin'], predicted_lin_reg,
             label = 'predicted probability of anemia (linear regression)', color = 'orange')
 plt.xlabel('Hemoglobin')
 plt.ylabel('Anemia \n(0 = no, 1 = yes)')
