@@ -14,7 +14,7 @@ jupyter:
     name: python3
 ---
 
-# Logistic Regression
+# Logistic regression
 
 ```{python tags=c("hide-cell")}
 import numpy as np
@@ -574,159 +574,85 @@ predictions very close to 0) to very large (for p values very close to 1).
 Notice too that our graph looks exponential, and we want it to be a straight
 line.   Our next step is to apply a *logarithm* transformation.
 
+## The logarithm transform
 
-# A quick refresher on logarithms
+See the [logarithm refresher](logarithms_refreshed) page for more background on
+logarithms.
 
-Don't worry - you don't need to do anything fancy with logarithms here.  You
-don't even need to fully understand this quick refresher.  In practice, all you
-need to know about logarithms for this section is that they make straight line graphs from exponential graphs.
+For now, the only thing you need to know about logarithms is that they are
+transformations that can convert an exponential curve into a straight line.
 
-That said, here is a whirlwind tour of logarithms.
+## The logit transform and its inverse
 
-Logarithms ask the question of a number - "what exponent do I need in order to
-make that number"?
+The logit transformation from the sigmoid curve to the straight line is:
 
-For example, consider the number:
+* Convert probability to odd-ratios.
+* Take the log of the result.
 
-```{python}
-x = 100
-```
-
-I want to write that number as 10 to the power of something - $10^y$.  $y$ is
-the *exponent* that I need for 10, to make 100.  In this case I can see that
-$y$ must be 2, because $10^2 = 100$.  If $x = 1000$ then $y = 3$ because $10^3
-= 1000$. The function `np.log10` works this out for us.  It takes the numbers
-we send it, and works out the exponent(s) it needs to apply to 10, to get those
-numbers.  For example:
+Our full logit transformation is therefore:
 
 ```{python}
-np.log10([100, 1000])
+def logit(p):
+    """ Apply logit transformation to array of probabilities `p`
+    """
+    odds_ratios = y / (1 - y)
+    return np.log(odds_ratios)
 ```
 
-The exponents don't have to be whole numbers.  For example, I can calculate $10^{3.5}$:
+`np.exp` reverses (inverts) the `np.log` transformation (see the [logarithm
+refresher](logarithms_refreshed) page).  You have seen above that there is a
+simple formula to go from odds ratios to probabilities.  The transformation
+that *reverses*  (inverts) the logit transform is therefore:
 
 ```{python}
-v = 10 ** 3.5
-v
+def inv_logit(v):
+    """ Reverse logit transformation on array of transformed values `v`
+    """
+    odds_ratios = np.exp(v)  # Reverse the log operation.
+    return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation.
 ```
 
-`np.log10` will find this exponent for me too:
+`inv_logit` takes points on a straight line, and converts them to points on a
+sigmoid.
+
+First we convince ourselves that `inv_logit` reverses `logit`, and vice versa.
+
+...
+
+## What do the slope and intercept mean for logit
+
+Changing the intercept of the logit straight line moves the corresponding
+sigmoid curve left and right on the horizontal axis:
 
 ```{python}
-np.log10(v)
+for intercept in [-6, -7, -8]:
+    plt.plot(fine_x,
+            params2pps([intercept, 0.8], fine_x),
+            linewidth=1,
+            linestyle=':',
+            label='logit intercept=%d' % intercept)
+plt.title('Sigmoid probability predictions')
+plt.xlabel('Hemoglobin')
+plt.ylabel('Probability prediction')
+plt.legend();
 ```
 
-and:
+Changing the slope of the logit straight line makes the transition from 0 to 1
+flatter or steeper:
 
 ```{python}
-L = np.log10([100, 1000, v])
-L
+for slope in [0.6, 0.8, 1.0]:
+    plt.plot(fine_x,
+            params2pps([-7, slope], fine_x),
+            linewidth=1,
+            linestyle=':',
+            label='logit slope=%.1f' % slope)
+plt.title('Sigmoid probability predictions')
+plt.xlabel('Hemoglobin')
+plt.ylabel('Probability prediction')
+plt.legend();
 ```
 
-`np.log10` reverses the effect of calculating 10 to the power of some value.
-
-```{python}
-values = np.array([2, 3, 4])
-v_exp_10 = 10 ** values
-v_exp_10
-```
-
-```{python}
-# log10 reverses the effect of 10 to the power of some values, to get those
-# values back.
-np.log10(v_exp_10)
-```
-
-Similarly, if I've transformed some values with `np.log10`, I can reverse that
-transformation by taking 10 to the power of the transformed values:
-
-```{python}
-more_values = np.array([10, 15, 20])
-v_log_10 = np.log10(more_values)
-v_log_10
-```
-
-```{python}
-# Taking 10 to the power of some values, reverses the effect of log10.
-10 ** v_log_10
-```
-
-You may remember that powers can be less than 1.  For example $10^{0.5}$ is the
-square root of 10:
-
-```{python}
-print(np.sqrt(10))
-print(10 ** 0.5)
-```
-
-Therefore:
-
-```{python}
-np.log10(np.sqrt(10))
-```
-
-It is a bit difficult to think about what $10^0$ might mean, but the rule is
-that $10^0$ is equal to 1, and therefore log10 of 1 is 0:
-
-```{python}
-np.log10(1)
-```
-
-Exponents can be negative.  A negative exponent gives the equivalent calculation to taking the power to the exponent without the minus sign, and then dividing into 1 - like this:
-
-```{python}
-print('10 ** -2 equals', 10 ** -2)
-print('1 / 10 ** 2 equals', 1 / (10 ** 2))
-```
-
-Therefore, a log of a number less than 1 will be negative:
-
-```{python}
-np.log10([0.5, 0.1, 0.01])
-```
-
-But - logarithms don't know how to handle minus numbers.  For example, there is
-no exponent you can apply to 10 to get -100:
-
-```{python}
-np.log10(-100)
-```
-
-So far all our examples of logs have been calculating the exponents for 10.
-This is what `np.log10` does.  10 is called the *base* of the logarithm - the
-number that we are calculating the exponent for. `np.log10` calculates
-logarithms with base 10.
-
-The base doesn't have to be 10.  Another common option is `np.log2` where we calculate the exponent we have to apply to 2, to get the input numbers:
-
-```{python}
-np.log2([2, 4, 8, 10])
-```
-
-In fact an even more common option is to use the special number $e$ as the
-base.  This is because taking exponents or calculating logarithms with base $e$
-have some very convenient mathematical properties, that are not relevant to us
-here.  Log to the base e is so common that Numpy simply uses `np.log` to mean
-logarithm to base $e$.
-
-```{python}
-print('e', np.e)
-print('e squared', np.e ** 2)
-print('e cubed', np.e ** 3)
-```
-
-As you would expect, `np.log` returns the exponent we need to apply to $e$ to recreate the input numbers:
-
-```{python}
-np.log([np.e, np.e ** 2, np.e ** 3])
-```
-
-As for all log bases, log of 1 is 0, and numbers less than 1 give negative log
-values:
-
-```{python}
-np.log([1, 0.5, 0.1])
-```
 
 ## A different measure of prediction error
 
@@ -905,40 +831,6 @@ $$ \text{squared prediction error = (actual outcome value - predicted outcome va
 
 <!-- #endregion -->
 
-
-## What do the slope and intercept mean for logit
-
-Changing the intercept of the logit straight line moves the corresponding
-sigmoid curve left and right on the horizontal axis:
-
-```{python}
-for intercept in [-6, -7, -8]:
-    plt.plot(fine_x,
-            params2pps([intercept, 0.8], fine_x),
-            linewidth=1,
-            linestyle=':',
-            label='logit intercept=%d' % intercept)
-plt.title('Sigmoid probability predictions')
-plt.xlabel('Hemoglobin')
-plt.ylabel('Probability prediction')
-plt.legend();
-```
-
-Changing the slope of the logit straight line makes the transition from 0 to 1
-flatter or steeper:
-
-```{python}
-for slope in [0.6, 0.8, 1.0]:
-    plt.plot(fine_x,
-            params2pps([-7, slope], fine_x),
-            linewidth=1,
-            linestyle=':',
-            label='logit slope=%.1f' % slope)
-plt.title('Sigmoid probability predictions')
-plt.xlabel('Hemoglobin')
-plt.ylabel('Probability prediction')
-plt.legend();
-```
 
 # Logistic Regression using minimize
 
