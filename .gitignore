@@ -1,2 +1,4 @@
 .ipynb_checkpoints/
 __pycache__/
+# Ignore built notebooks to make version control cleaner.
+*.ipynb
