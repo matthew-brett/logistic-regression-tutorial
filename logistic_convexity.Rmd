@@ -364,7 +364,7 @@ inter_ML, slope_ML = mr_ML.x
 predicted_ML = inv_logit(inter_ML + slope_ML * hemoglobin)
 ```
 
-```{python}
+```{python tags=c("hide-cell")}
 plot_hgb_app()
 plt.scatter(hemoglobin, predicted_ML, c='gold', label='ML prediction')
 plt.legend();

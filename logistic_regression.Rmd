@@ -130,8 +130,8 @@ good appetite.
 # later use.
 
 def plot_hgb_app():
-    # Build plot, add custom label.
-    colors = appetite_d.replace(0, 'red').replace(1, 'blue')
+    # Build plot, add custom labels.
+    colors = hgb_app['Appetite'].replace(['poor', 'good'], ['red', 'blue'])
     hgb_app.plot.scatter('Hemoglobin', 'appetite_dummy', c=colors)
     plt.ylabel('Appetite\n0 = poor, 1 = good')
     plt.yticks([0,1]);  # Just label 0 and 1 on the y axis.
@@ -199,8 +199,8 @@ $$
 What would happen if we tried to use linear regression to predict the
 probability of having good appetite, based on hemoglobin concentrations?
 
-Let us start by grabbing the `ss_any_line` function from the [Using minimize
-page](../mean-slopes/using_minimize.html).
+Let us start by grabbing a version of the `ss_any_line` function from the
+[Using minimize page](../mean-slopes/using_minimize.html).
 
 ```{python}
 def ss_any_line(c_s, x_values, y_values):
@@ -316,13 +316,6 @@ The new prediction line is in gold.
 # will come on that machinery soon.  For now please ignore this code, and
 # concentrate on the plots below.
 
-def logit(y):
-    """ Apply logit transformation
-    """
-    odds_ratios = y / (1 - y)
-    return np.log(odds_ratios)
-
-
 def inv_logit(y):
     """ Reverse logit transformation
     """
@@ -404,8 +397,7 @@ This is the original sigmoid curve above, with the predictions, in its own
 plot.
 
 ```{python tags=c("hide-cell")}
-plt.scatter(hemoglobin, predictions_new,
-            color='gold')
+plt.scatter(hemoglobin, predictions_new, color='gold')
 plt.plot(fine_x, fine_y_sigmoid, linewidth=1, linestyle=':')
 plt.title('Sigmoid probability prediction')
 plt.xlabel('Hemoglobin')
@@ -416,8 +408,7 @@ Next we apply the conversion from probability to odds-ratio:
 
 ```{python tags=c("hide-cell")}
 predictions_or = predictions_new / (1 - predictions_new)
-plt.scatter(hemoglobin, predictions_or,
-            color='gold')
+plt.scatter(hemoglobin, predictions_or, color='gold')
 fine_y_or = fine_y_sigmoid / (1 - fine_y_sigmoid)
 plt.plot(fine_x, fine_y_or, linewidth=1, linestyle=':')
 plt.title('Odds-ratio prediction')
@@ -432,8 +423,7 @@ the logit transformation:
 
 ```{python}
 predictions_or_log = np.log(predictions_or)
-plt.scatter(hemoglobin, predictions_or_log,
-            color='gold')
+plt.scatter(hemoglobin, predictions_or_log, color='gold')
 fine_y_or_log = np.log(fine_y_or)
 plt.plot(fine_x, fine_y_or_log, linewidth=1, linestyle=':')
 plt.title('Logit prediction')
@@ -568,7 +558,37 @@ See the [logarithm refresher](logarithms_refreshed) page for more background on
 logarithms.
 
 For now, the only thing you need to know about logarithms is that they are
-transformations that can convert an exponential curve into a straight line.
+transformations that convert an exponential curve into a straight line.
+
+Here's an example:
+
+```{python tags=c("hide-cell")}
+x = np.linspace(0, 10, 1000)
+y = 3 ** x
+fig, axes = plt.subplots(1, 2)
+ax0, ax1 = axes
+ax0.plot(x, y)
+ax0.set_title(r'$y=3^x$')
+ax1.plot(x, np.log(y))
+ax1.set_title(r'Log of $3^x$');
+```
+
+You have already see logs in action transforming the odds-ratio predictions.
+
+```{python tags=c("hide-cell")}
+fig, axes = plt.subplots(1, 2)
+ax0, ax1 = axes
+ax0.scatter(hemoglobin, predictions_or, color='gold')
+ax0.plot(fine_x, fine_y_or, linewidth=1, linestyle=':')
+ax0.set_title('Odds-ratio')
+ax0.set_xlabel('Hemoglobin')
+ax0.set_ylabel('Odds-ratio');
+ax1.scatter(hemoglobin, predictions_or_log, color='gold')
+ax1.plot(fine_x, fine_y_or_log, linewidth=1, linestyle=':')
+ax1.set_title('Log odds-ratio')
+ax1.set_xlabel('Hemoglobin')
+ax1.set_ylabel('Log odds-ratio');
+```
 
 ## The logit transform and its inverse
 
@@ -587,9 +607,28 @@ def logit(p):
     return np.log(odds_ratios)
 ```
 
+Here's the original sigmoid predictions and the predictions with the `logit` transform applied:
+
+```{python tags=c("hide-cell")}
+fig, axes = plt.subplots(1, 2)
+ax0, ax1 = axes
+ax0.scatter(hemoglobin, predictions_new, color='gold')
+ax0.plot(fine_x, fine_y_sigmoid, linewidth=1, linestyle=':')
+ax0.set_title('Sigmoid p')
+ax0.set_xlabel('Hemoglobin')
+ax0.set_ylabel('Sigmoid p values');
+ax1.scatter(hemoglobin, logit(predictions_new), color='gold')
+ax1.plot(fine_x, logit(fine_y_sigmoid), linewidth=1, linestyle=':')
+ax1.set_title('Logit on sigmoid')
+ax1.set_xlabel('Hemoglobin')
+ax1.set_ylabel('Log odds-ratio');
+```
+
+We also want to be able to go backwards, from the straight-line predictions, to
+the sigmoid predictions.
+
 `np.exp` reverses (inverts) the `np.log` transformation (see the [logarithm
 refresher](logarithms_refreshed) page):
-
 
 ```{python}
 # np.exp reverses the effect of np.log.
@@ -623,24 +662,8 @@ back_again = inv_logit(some_log_odds)
 print('Logit, then inv_logit returns the original data', back_again)
 ```
 
-Here's are the same sigmoid curve p-value predictions that you saw above, and
-the p-value predictions with the logit transformation applied:
-
-```{python tags=c("hide-cell")}
-fig, axes = plt.subplots(1, 2)
-ax0, ax1 = axes
-ax0.scatter(hemoglobin, predictions_new,
-            color='gold')
-ax0.set_title('Sigmoid p-value')
-ax0.set_xlabel('Hemoglobin')
-ax0.set_ylabel('p-value predictions');
-log_odds = logit(predictions_new),
-ax1.scatter(hemoglobin, log_odds,
-            color='gold')
-ax1.set_title('logit result')
-ax1.set_xlabel('Hemoglobin')
-ax1.set_ylabel('Logit transformed');
-```
+The plot above has the sigmoid curve p-value predictions, and the p-value
+predictions with the logit transformation applied.
 
 Next you see the logit-transformed results on the left.  The right shows the
 results of applying `inv_logit` to recover the original p values.
@@ -648,16 +671,17 @@ results of applying `inv_logit` to recover the original p values.
 ```{python tags=c("hide-cell")}
 fig, axes = plt.subplots(1, 2)
 ax0, ax1 = axes
-ax0.scatter(hemoglobin, log_odds,
-            color='gold')
+ax0.scatter(hemoglobin, predictions_or_log, color='gold')
 ax0.set_title('Logit values')
 ax0.set_xlabel('Hemoglobin')
 ax0.set_ylabel('Logit transformed');
+ax0.plot(fine_x, fine_y_or_log, linewidth=1, linestyle=':')
 ax1.scatter(hemoglobin, predictions_new,
             color='gold')
 ax1.set_title('inv_logit result')
 ax1.set_xlabel('Hemoglobin')
 ax1.set_ylabel('inv_logit result');
+ax1.plot(fine_x, inv_logit(fine_y_or_log), linewidth=1, linestyle=':');
 ```
 
 ## Effect of the Logit slope and intercept on the sigmoid
@@ -809,581 +833,393 @@ plt.legend();
 
 ## A different measure of prediction error
 
-Our sigmoid prediction from sum of squares above looks convincing enough, but, is there a better way of scoring our lines, than sum of squares?
+Our sigmoid prediction from sum of squares above looks convincing enough, but,
+is there a better way of scoring the predictions from our line, than sum of
+squares?
 
-In other sections of this textbook, you have calculated the sum of squares
-error for a range of slopes and intercepts.  In the simple cases we were
-looking at there, we found a very pleasant looking symmetrical parabola; when
-the intercept or slope was far from the optimal, the sum of squared error was
-very high, as we try intercepts (or slopes) nearer the optimal, the error comes
-down quickly, to a clear minimum.  That is the ideal situation for `minimize`, but we don't have the same situation here.
+It turns out there is another quite different and useful way to score the
+predictions, called *likelihood*.  For reasons we discuss in [this
+page](logistic_convexity), all standard implementations of logistic regression
+that we know of, use the *likelihood* measure that we describe below, instead
+of the sum of squares measure you see above.
 
-In the next cell, we set the slope to the best sum of squares slope minimize
-found, and vary the intercept, calculating the error for different intercepts.
-There is a clear minimum, but we have lost the nice parabola shape.  For
-intercepts greater than about 5, the graph is very flat, so minimize can ran
-into trouble if it is trying values of about - say - 10 - because smallish
-changes in the intercept will make very little difference to the error.
+Likelihood asks the question: assuming our predicting line, how likely are the
+actual 0 / 1 values that we see?
+
+To answer this question, we first ask this question about the individual 0 / 1
+values.
+
+We start with our intercept of -7 and slope of 0.8 for the straight-line log-odds values.  We generate the straight-line predictions, then convert them to sigmoid p-value predictions.
 
 ```{python}
-intercepts = np.linspace(-10, 5, 1000)
-n = len(intercepts)
-ss_errors = np.zeros(n)
-for i in np.arange(n):
-    ss_errors[i] = ss_logit([intercepts[i], logit_ss_slope],
-                            hemoglobin, appetite_d)
-
-plt.scatter(intercepts, ss_errors)
-plt.xlabel('intercept')
-plt.ylabel('Sigmoid SS error')
+log_odds_predictions = -7 + hemoglobin * 0.8
+sigmoid_p_predictions = inv_logit(log_odds_predictions)
 ```
 
-It can get even worse when trying slopes that are further away from the
-optimum.  Here it is very difficult to see the minimum for the error, when we have the slope badly wrong at -1:
+Remember, these are the predicted probabilities of a 1 label.  We rename to remind ourselves:
 
 ```{python}
-slopes = np.linspace(0, 1, 1000)
-n = len(slopes)
-ss_errors = np.zeros(n)
-for i in np.arange(n):
-    ss_errors[i] = ss_logit([logit_ss_inter, slopes[i]],
-                            hemoglobin, appetite_d)
-
-plt.scatter(intercepts, ss_errors)
-plt.xlabel('slope')
-plt.ylabel('Sigmoid SS error')
+pp_of_1 = sigmoid_p_predictions
 ```
 
-## A different measure of prediction error
-
-To address this issue, logistic regression does not minimize the sum of the squared prediction errors like linear regression does. 
-
-Logistic regression uses a different function for calculating prediction errors, and it minimizes this function instead. Another way of saying this is that it minimizes a different cost function.
-
-The cost function that logistic regression uses is convex - meaning it works much better with minimize, as it has a single lowest point.
-
-To understand the function logistic regression uses to calculate prediction errors, we will need to do a very brief aside about <i> natural logarithms </i>.
-
-#### Natural Logarithms
-
-The natural logarithm of a number tells you: "what power would I have to raise `e` to, in order to produce this number?".
-
-This sounds more complex than it is. 
-
-`e` squared equals 7.3890560989306495, as we can see from the cell below:
-<!-- #endregion -->
+We put these predictions into a copy of our data set to make them easier to display:
 
 ```{python}
-np.e**2
+hgb_predicted = hgb_app.copy()
+hgb_predicted['pp_of_1'] = pp_of_1
+hgb_predicted.head()
 ```
 
-If I asked you, now you've seen the cell above: "what number would I have to raise `e` to, in order to get 7.3890560989306495?".
-
-If you're really good at remembering decimal places, you'd say: "well, `e` squared equals 7.3890560989306495. So you raise `e` to the power of 2 to get 7.3890560989306495".
-
-Another way of saying this is that the natural log of 7.3890560989306495 is 2. 
-
-We can represent this with a formula:
-
-$$ ln(7.3890560989306495) = 2 $$
-
-`ln(7.3890560989306495)` means 'the natural log of 7.3890560989306495'. We can use `np.log()` to calculate the natural logarithm of a number.
+Consider the last row in this data frame:
 
 ```{python}
-np.log(7.3890560989306495)
+last_row = hgb_predicted.tail(1)
+last_row
 ```
 
-In logistic regression, we calculate the prediction errors are follows:
-
-If the dummy variable of the actual outcome score equals 1, then the prediction error equals the negative natural logarithm of the predicted probability:
-
- $$ \text{if the actual outcome == 1, then:}$$
- $$\text{prediction error = -ln(predicted probability)} $$
-
-If the dummy variable of the actual outcome score equals 0, then the prediction error equals the negative natural logarithm of 1 minus the predicted probability.
-
- $$ \text{if the actual outcome == 0, then:}$$
- $$\text{prediction error = -ln(1 - predicted probability)} $$
-
-Again, this looks more complex than it is (I promise!). Once more, it is better to focus on how this calculation works, rather than why it works.
-
-The table below shows some possible pairings of the actual outcome and predicted outcome. The predicted outcome is a probability, it is the predicted probability that an observations falls into the class with the dummy variable 1:
+The `pp_of_1` value is the probability that we will see a label of 1 for this
+observation.   The outcome was, in fact, 1.  Therefore the predicted
+probability that we will see the actual value is just the corresponding
+`pp_of_1` value:
 
 ```{python}
-# this is just here to generate the illustration
-
-illustration = pd.DataFrame({'actual outcome': [0, 1, 0, 1], 'predicted probability of being in class 1': [0.2, 0.8, 0.8,0.2],
-                           'prediction close?': ['yes', 'yes', 'no', 'no']})
-
-illustration
+pp_of_last_value = pp_of_1.iloc[-1]
+pp_of_last_value
 ```
 
-Let's write a python function to calculate the prediction errors for logistic regression. 
-
-This is called a <i> piecewise function, </i> because what the function does varies depending on what input it is given. In python, we can do this with `if` statements:
+Now consider the first row:
 
 ```{python}
-def log_reg_pred_err(actual_outcome, predicted_probability):
-    
-    # create an array to store the prediction errors
-    prediction_error = np.zeros(len(actual_outcome))
-    
-    # for every observation
-    for i in np.arange(len(actual_outcome)):
-        
-        # if the actual outcome for that observation is in class 1...
-        if actual_outcome[i] == 1:
-            
-            # ...then the prediction error equals the negative natural logarithm of the predicted probability
-            prediction_error[i] = -np.log(predicted_probability[i])
-            
-        # if the actual outcome for that observation is in class 0...
-        if actual_outcome[i] == 0:
-            
-            # ...then prediction error equals the negative natural logarithm of 1 minus the predicted probability
-            prediction_error[i] = -np.log(1 - predicted_probability[i])
-        
-    return prediction_error
+first_row = hgb_predicted.head(1)
+first_row
 ```
 
-Let's calculate the prediction errors for the values in the dataframe above:
+The probability for an `appetite_dummy` value of 1 is:
 
 ```{python}
-illustration['prediction error'] = log_reg_pred_err(illustration['actual outcome'], 
-                                                    illustration['predicted probability of being in class 1'])
-
-illustration
+pp_of_1[0]
 ```
 
-Make sure you inspect this dataframe in great detail. It is very important. Remember that the predicted probability is is the probability of being in class 1. 
-
-We want the predicted probability to be large (close to 1) when the actual outcome score is in class 1. We want the predicted probability to be small (close to 0) when the actual outcome score is in class 0.
-
-<b> You can see that when the prediction is close - i.e. when the predicted probability is accurate - the prediction error is small. </b>
-
-<b> When the prediction is not close, the prediction error is large. </b>
-
-Remember that good model leads to <i> small prediction errors </i>. 
-
-Even if you do not understand the precise mechanics of the prediction error formulas in logistic regression, you can see how they work. 
-
-<i> When the predictions are good, the error values are small. When the predictions are bad, the error values are large. </i>
-
-Let's illustrate this further with a graph. The graph below shows the prediction error function for logistic regression:
+Because the values can only be 0 or 1, the predicted probability of an
+`appetite_dummy` of 0 must be 1 minus the (predicted probability of 1):
 
 ```{python}
-# do not worry about this code, it just generates the graph
-
-actual = np.random.choice([0,1], size = 5000)
-
-predictions = np.random.uniform(0.01, 0.99, size = 5000)
-
-error = log_reg_pred_err(actual, predictions)
-
-from mpl_toolkits.mplot3d import Axes3D
-
-fig = plt.figure(figsize = (10,8))
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(actual, predictions, error)
-plt.xlabel('Actual Outcome')
-plt.xticks([0,1])
-plt.ylabel('Predicted probability of being in class 1')
-
-ax.set_zlabel('Prediction Error');
-plt.show()
+pp_of_first_value = 1 - pp_of_1[0]
+pp_of_first_value
 ```
 
-<!-- #region -->
-Again, take a bit of time to go over this graph. It is very important for understanding logistic regression.
-
-You can see from the graph that:
-
-If the actual outcome class is 0, and the predicted probability is close to 0, the prediction error is low.
-
-If the actual outcome class is 0, and the predicted probability is close to 1, the prediction error is high.
-
-If the actual outcome class is 1, and the predicted probability is close to 0, the prediction error is high.
-
-If the actual outcome class is 1, and the predicted probability is close to 1, the prediction error is low.
-
-Keep re-visiting the graph until you are sure of this pattern.
-
-## What is the name of the function for calculating prediction errors in logistic regression?
-
-The function we have just used for calculating the prediction errors in logistic regression is called the <i> cross-entropy cost function. </i>
-
-Conversely the errors in linear regression are calculated using the <i> squared prediction error function </i>.
-
-Both of these are shown again below, just so you can see how different they are:
-
-### Logistic regression cross-entropy cost function:
-
- $$ \text{if the actual outcome == 1, then:}$$
- $$\text{prediction error = -ln(predicted probability)} $$
-
- $$ \text{if the actual outcome == 0, then:}$$
- $$\text{prediction error = -ln(1 - predicted probability)} $$
- 
-### Linear regression squared prediction error function:
-
-$$ \text{squared prediction error = (actual outcome value - predicted outcome value)}^2 $$
-
-
-<!-- #endregion -->
-
-
-# Logistic Regression using minimize
-
-We now have the tools we need to implement logistic regression using minimize. We are going to predict Anemia status (yes/no) from Red Blood Cell Count.
-
-The actual function that we minimize in logistic regression is the <i> average prediction error, </i> where each prediction error is calculated using the cross-entropy function shown above.
-
-Let's write a function to pass to `minimize`, which calculates the average prediction error for an intercept and slope pair. Go over the comments in the cell below and make sure you understand what each line is doing.
+We can therefore calculate the predicted probability of each 0 / 1 label in the
+data frame like this:
 
 ```{python}
-def logb(arr, b=np.e):
-    """ Logarithm of `arr` to base `b`
-   
-    From formula in:
-    
-    https://en.wikipedia.org/wiki/Logarithm#Change_of_base
+# Predicted probability of 0.
+pp_of_0 = 1 - pp_of_1
+# The next line sets all the label == 1 values correctly, but
+# the label == 0 values are now incorrect.
+pp_of_label = pp_of_1.copy()
+# Set the label == 0 values correctly.
+poor_appetite = appetite_d == 0
+pp_of_label[poor_appetite] = pp_of_0[poor_appetite]
+# Put this into the data frame for display
+hgb_predicted['pp_of_label'] = pp_of_label
+hgb_predicted
+```
+
+There's a fancy short-cut to the several lines above.  We can form the
+`pp_of_label` column by first multiplying the 0 / 1 label column by the
+`pp_of_1`.  This correctly sets the `pp_of_label` values for labels of 1, and
+sets the remainder to 0.  Then we reverse the 0 / 1 labels by subtracting from
+1, and multiply by `pp_of_0` to set the 0 values to their correct values.
+
+```{python}
+# Set label == 1 values to predicted p, others to 0
+pos_ps = appetite_d * pp_of_1
+# Set label == 0 values to 1-predicted p, others to 0
+neg_ps = (1 - appetite_d) * pp_of_0
+# Combine by adding.
+final = pos_ps + neg_ps
+# This gives the same result as the code cell above:
+hgb_predicted['pp_of_label_fancy'] = final
+hgb_predicted
+```
+
+We can do the whole cell above in one line:
+
+```{python}
+# Compact version of pp of label calculation.
+final_again = appetite_d * pp_of_1 + (1 - appetite_d) * (1 - pp_of_1)
+hgb_predicted['pp_again'] = final_again
+hgb_predicted
+```
+
+When the `pp_of_label` values are near 1, this means the result was close to the prediction.  When they are near 0, it means the result was unlike the prediction.
+
+Now we know the probabilities of each actual 0 and 1 label, we can get a
+measure of how *likely* the *combination* of all these labels are, given these
+predictions. We do this by *multiplying* all the probabilities in
+`pp_of_label`.  When the probabilities in `pp_of_label` are all fairly near 1,
+multiplying them will give a number that is not very small.  When some or many
+of the probabilities are close to 0, the multiplication will generate a very
+small number.
+
+The result of this multiplication is called the *likelihood* of this set of
+labels, given the predictions.
+
+If the predictions are closer to the actual values, the likelihood will be
+larger, and closer to 1.  When the predictions are not close, the likelihood
+will be low, and close to 0.
+
+Here is the likelihood for our intercept of -7 and slope of 0.8.
+
+```{python}
+# np.prod multiplies each number to give the product of all the numbers.
+likelihood = np.prod(pp_of_label)
+likelihood
+```
+
+This is a very small number.  Likelihoods are often close to 0 with a
+reasonable number of points, and somewhat inexact prediction, because there
+tend to be a fairly large number of small p values in `pp_of_labels`.  The
+question is - do other values for the intercept and slope give smaller or
+larger values for the likelihood?
+
+We can put this *likelihood* scoring into our cost function, instead of using sum of squares.
+
+One wrinkle is that we want our cost function value to be *lower* when the line
+is good, but the likelihood is *higher* when the line is a good one.  We solve
+this by sticking a minus on the likelihood before we return from the cost
+function. This makes `minimize` find the parameters giving the *minimum* of the
+*negative likelihood*, and therefore, the *maximum likelihood* (ML).
+
+```{python}
+def simple_ml_logit_cost(intercept_and_slope, x, y):
+    """ Simple version of cost function for maximum likelihood
     """
-    return np.log(arr) / np.log(b)
-```
-
-```{python}
-print(logb(11), np.log(11))
-print(logb(11, b=10), np.log10(11))
-print(logb(11, b=2), np.log2(11))
-```
-
-```{python}
-def params2pps(intercept_and_slope, x, b=np.e):
-    """ Calculate predicted probabilities of 1 for each observation
-    """
-    # store the intercept and slope as Python variables.
     intercept, slope = intercept_and_slope
-    # Predicted log odds of being in class 1.
+    # Make predictions for sigmoid.
     predicted_log_odds = intercept + slope * x
-    # To get the odds, we invert the log operation.
-    predicted_odds = b ** predicted_log_odds
-    # Predicted probability of being in class 1.
-    return predicted_odds / (1 + predicted_odds)
+    pp_of_1 = inv_logit(predicted_log_odds)
+    # Calculate predicted probabilities of actual labels.
+    pp_of_labels = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
+    likelihood = np.prod(pp_of_labels)
+    # Ask minimize to find maximum by adding minus sign.
+    return -likelihood
 ```
 
-```{python}
-def p_y_given_pps(pps, y):
-    # pps is the predicted probability of being in class 1.
-    # Because class 1 and 0 are mutually exclusive:
-    pp0 = 1 - pps
-    p_of_y = pps.copy()  # y == 1 values correctly set.
-    p_of_y[y == 0] = pp0[y == 0]  # set the y==0 values.
-    # Or - equivalently, but rather less readably:
-    # p_of_y = y * pp1 + (1 - y) * pp0
-    return p_of_y
-```
+We can try that cost function, starting at our familiar intercept of -7 and slope of 0.8.
+
+Before we do, there is one extra wrinkle, that we will solve in another way
+further down the notebook.  At the moment the likelihood values we are
+returning are very small - in the order of $10^{13}$.  We expect scores for
+different plausible lines to differ by an even small amount.  By default,
+`minimize` will treat these very small differences as insignificant.  We can tell it to pay attention to these kind of differences by passing a very small value to the `tol` parameter (`tol` for *tolerance*).
 
 ```{python}
-def calc_log_likelihood(pp1, y, b=np.e):
-    """ Overall log likelihood of `y` given predicted ps `pp1`
+mr_ML = minimize(simple_ml_logit_cost,  # Cost function
+                 [-7, 0.8],  # Guessed intercept and slope
+                 args=(hemoglobin, appetite_d),  # x and y values
+                 tol=1e-16)  # Attend to tiny changes in cost function values.
+# Show the result.
+mr_ML
+```
+
+`minimize` is complaining that it was not happy with the numerical accuracy of its answer, and we will address that soon.  For now, lets look at the predictions to see if they are reasonable.
+
+```{python}
+inter_ML, slope_ML = mr_ML.x
+predicted_ML = inv_logit(inter_ML + slope_ML * hemoglobin)
+```
+
+```{python tags=c("hide-cell")}
+plot_hgb_app()
+plt.scatter(hemoglobin, predicted_ML, c='gold', label='ML prediction')
+plt.legend();
+```
+
+## A computation trick for the likelihood
+
+As you've seen, the likelihood values can be, and often are, very small, and close to zero.
+
+You may also know standard numerical calculations on computers are not
+completely precise; the calculations are only accurate to around 16 decimal
+places.  This is because of the way computers store floating point numbers.
+
+The combination of low likelihood values, and limited calculation precision can
+be a problem for the simple ML logistic cost function you see above.  As a
+result, practical implementations of logistic regression use an extra trick to
+improve the calculation accuracy of the likelihoods.
+
+This trick also involves logarithms.
+
+Here we show a very important property of the logarithm transform:
+
+```{python}
+print('Multiplying two numbers', 11 * 15)
+print('Adding, inverting the logs', np.exp(np.log(11) + np.log(15)))
+```
+
+What you see here is that we get the same answer if we:
+
+* Multiply two numbers OR
+* If we take the logs of the two numbers, *add them*, then reverse the log
+  operation, in the this case with `np.exp`.
+
+We can replace multiplication by addition, if we take the logs of the values.
+
+Here we do the same log-then-add-then-unlog trick on a array of numbers:
+
+```{python}
+some_numbers = np.array([11, 15, 1, 0.3])
+print('Product of the array', np.prod(some_numbers))
+print('Log-add-unlog on the array', np.exp(np.sum(np.log(some_numbers))))
+```
+
+We can use this trick to calculate our likelihood by adding logs instead of multiplying the probabilities directly:
+
+```{python}
+print('Likelihood with product of array', np.prod(pp_of_label))
+# The log-add-unlog version.
+logs_of_pp = np.log(pp_of_label)
+log_likelihood = np.sum(logs_of_pp)
+print('Likelihood with log-add-unlog', np.exp(log_likelihood))
+```
+
+This doesn't seem to have solved all our problem, because we still end up with
+the type of tiny number that confuses `minimize`.
+
+The next stage of the solution is to realize that the `minimize` does not need the actual likelihood, it needs some number that goes up or down in exactly the same way as likelihood.  If the cost function can return some number that goes up when likelihood goes up, and goes down when likelihood goes down, `minimize` will still find the same parameters to minimize this cost function.
+
+Specifically we want the value that comes back from the cost function to vary
+[monotonically](https://en.wikipedia.org/wiki/Monotonic_function) with the
+`likelihood`.  Consider any two pairs of (intercept, slope). Call the first
+pair `p1` and the second pair `p2`.  Call the likelihoods for `p1` and `p2`:
+`L2` and `L2` respectively.  Say we've got another way of calculating a value
+for `p1` and `p2`, and the values that come back are `M1` and `M2`
+respectively.  We can swap this other way into our cost function as long as
+it's always true that: when `L1 > L2` then `M1 > M2`; when `L1 < L2` then `M1 <
+M2`; and when `L1 == L2`, `M1 == M2`.  In that case we call our new calculation
+generating `M1` and `M2` *monotonic* with respect to the original calculation
+generating `L1` and `L2`.  In our case this original calculation is likelihood.
+The new monotonic calculation is the *log likelihood*.
+
+You may be able to see that if the likelihood goes up, then the log of
+likelihood will also go up, and vice versa.
+
+This means that, for our cost function, we don't have to do the last nasty
+unlog step above, that generates the tiny number.  We can just return the
+(minus of the) log of the likelihood.  The log of the likelihood turns out to
+be a manageable negative number, even when the resulting likelihood is tiny.
+
+```{python}
+log_likelihood
+```
+
+This trick gives us a much more stable way of returning something from the cost function.  That something will vary in the same as the likelihood - but it will no longer suffer from the calculation errors we expect from very small numbers:
+
+```{python}
+def mll_logit_cost(intercept_and_slope, x, y):
+    """ More stable version of cost function for maximum likelihood
+
+    Return minus of the log of the likelihood.
     """
-    p_of_ys = p_y_given_pps(pp1, y)
-    # Overall likelihood of this intercept, slope combination is the product of
-    # all the likelihoods (we are multiplying probabilities).
-    # That would be:
-    # likelihood = np.prod(likelihoods)
-    # But - if we just multiply these, there are often so many values close to
-    # zero that the result gets close to the smallest values the computer can
-    # represent or even gets smaller, in which case the value becomes 0.
-    # To avoid this, we can add the logs (instead of taking the product of the
-    # original values).  Adding the logs gives us the log of the likelihood as
-    # defined above.
-    # Which base we use for the log here does not matter, we're just
-    # trying to maintain the precision, the results will go up and down
-    # in the same way, for the same values, and we don't care about
-    # the exact number, only that it is higher for a higher likelihood.
-    # But - just for completeness, use the general log function.
-    log_likelihood = np.sum(logb(p_of_ys, b=b))
-    return log_likelihood
-```
-
-```{python}
-def log_reg_cost(intercept_and_slope, x, y, b=np.e):
-    # Predicted probability of being in class 1.
-    pp1 = params2pps(intercept_and_slope, x, b=b)
-    # Overall log of the likelihood of observed outomes y
-    log_likelihood = calc_log_likelihood(pp1, y, b=b)
-    # At the moment, a higher value here means the intercept and slope are a
-    # *better* fit, but minimize wants the value to go *down* for a better fit,
-    # so we just stick a minus on it to make better fits give lower values.
+    intercept, slope = intercept_and_slope
+    # Make predictions for sigmoid.
+    predicted_log_odds = intercept + slope * x
+    pp_of_1 = inv_logit(predicted_log_odds)
+    # Calculate predicted probabilities of actual labels.
+    pp_of_labels = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
+    # Use logs to calculate log of the likelihood
+    log_likelihood = np.sum(np.log(pp_of_labels))
+    # Ask minimize to find maximum by adding minus sign.
     return -log_likelihood
 ```
 
 ```{python}
-from scipy.optimize import minimize
-
-predictor = hgb_app['Hemoglobin']
-outcome = hgb_app['appetite_dummy']
-
-# Results using default base of np.e
-b_e_res = minimize(log_reg_cost, [1,1], args = (predictor,outcome))
-p_values_e = params2pps(b_e_res.x, predictor)
-print('Base e fun value, best-fit parameters:', b_e_res.fun, b_e_res.x)
-# Results using base 10
-b_10_res = minimize(log_reg_cost, [1,1], args = (predictor, outcome, 10))
-p_values_10 = params2pps(b_10_res.x, predictor, b=10)
-print('Base 10 fun value, best-fit parameters:', b_10_res.fun, b_10_res.x)
-# The fun value, parameters for log e, log 10 are predictably scaled
-# versions of each other.
-print('Base 10 fun value, parameters, scaled by log(10):',
-      b_10_res.fun * np.log(10), b_10_res.x * np.log(10))
-# The estimated p values are (more or less) the same.
-print('p likelihoods similar?', np.allclose(p_values_e, p_values_10))
+mr_MLL = minimize(mll_logit_cost,  # Cost function
+                  [-7, 0.8],  # Guessed intercept and slope
+                  args=(hemoglobin, appetite_d),  # x and y values
+                  )
+# Show the result.
+mr_MLL
 ```
+
+Notice that we did not have to tell `minimize` to use a very small value for the tolerance this time.
+
+The values that come back are very similar to the more fragile version using the
+likelihood:
 
 ```{python}
-# Review what happens with the likelihood.
-pp1 = params2pps(b_e_res.x, predictor)
-p_of_ys = p_y_given_pps(pp1, outcome)
-p_of_ys
+inter_MLL, slope_MLL = mr_MLL.x
+predicted_MLL = inv_logit(inter_MLL + slope_MLL * hemoglobin)
 ```
 
-```{python}
-# We would be sort-of OK with the best parameters, in that
-# the product of the p values is not that close to 0:
-likelihood = np.prod(p_of_ys)
-print(likelihood)
-log_likelihood = np.sum(np.log(p_of_ys))
-print(log_likelihood)
-print(np.e ** log_likelihood)
+```{python tags=c("hide-cell")}
+plot_hgb_app()
+plt.scatter(hemoglobin, predicted_ML, c='gold', label='MLL prediction')
+plt.title('Maximum log likelihood cost function')
+plt.legend();
 ```
 
-```{python}
-# But it's a mess if we are further off, so some of the p
-# values get very small, and the product of the p values gets
-# very close to 0 - and then so close that it becomes 0.
-pp1_bad = params2pps([12, -1], predictor)
-p_of_ys_bad = p_y_given_pps(pp1_bad, outcome)
-p_of_ys_bad
-```
+You have just seen the standard calculations behind most packages that implement logistic regression.
 
-```{python}
-likelihood_bad = np.prod(p_of_ys_bad)
-print(likelihood_bad)
-log_likelihood_bad = np.sum(np.log(p_of_ys_bad))
-print(log_likelihood_bad)
-print(np.e ** log_likelihood_bad)
-```
-
-```{python}
-# We could fix this with numbers that have 50 digits of precision
-# but that would be horribly slow.
-from decimal import Decimal, getcontext
-getcontext().prec = 50  # 50 decimal points.
-# An array of numbers working with 50 decimal digits of precision.
-p_of_ys_bad_hp = p_of_ys_bad.apply(Decimal)
-likelihood_bad_hp = np.prod(p_of_ys_bad_hp)
-print(likelihood_bad_hp)
-logs_hp = p_of_ys_bad_hp.apply(Decimal.ln)
-log_likelihood_bad_hp = np.sum(logs_hp)
-print(log_likelihood_bad_hp)
-e_hp = Decimal(1).exp()  # e to 50 decimal places.
-print(e_hp ** log_likelihood_bad_hp)
-```
-
-Notice above that the log likelihood is near as dammit the same as when we do the calculation without the high-precision numbers, but the high-precision numbers stop the rounding to 0.
-
-The conclusion is - we can keep using the log-likelihood at our usual fast precision, but we do need to do the log-likelihood rather than the direct product of p values, to avoid the calculation breaking down when it's trying parameters that are fairly far off.
-
-
-Now let's pass our function to `minimize`, to find the slope and intercept which minimize the average prediction error.
-
-We'll start with an intercept of 1 and a slope of 1 as our first guess. 
-
-```{python}
-# store the predictor variable as a python variable
-predictor = hgb_app['Hemoglobin']
-
-# store the dummy-coded outcome variable as a python variable 
-outcome = hgb_app['appetite_dummy']
-
-min_log_reg = minimize(log_reg_cost, [1,1], args = (predictor,outcome))
-min_log_reg 
-```
-
-So `minimize` found an intercept of 10.43827715 and a slope of -3.14932093. These values minimize the prediction errors, calculated using the cross-entropy function.
-
-The slope is more interesting than the intercept here. 
-
-In fact the intercept is quite hard to interpret (for those who are interested: it is is the predicted natural logarithm of the odds of being in outcome class 1, for an observation with a Red Blood Cell Count of 0).
-
-The precise value of the slope is also quite hard to interpret, because it also relates to the natural logarithm of the odds of being in outcome class 1. 
-
-However, because the slope is negative, this tells us that as Red Blood Cell Count increases, the odds of being in class 1 (having anemia) decrease.
-
-Interpreting logistic regression is much easier if we use this slope and intercept to generate predicted probabilities of having anemia, for each observation.
-
-As we did before, let's generate the predicted probabilities using the intercept/slope values that `minimize` has found. The formulas for doing this are shown once more here for convenience:
-
-Calculate the predicted odds of having anemia:
-
-$$ \text{predicted odds of anemia} = e^{\text{intercept + slope * Red Blood Cell Count}} $$
-
-Calculate the predicted probability of having anemia:
-
-$$ \text{predicted probability of anemia} = \frac{e^{\text{intercept + slope * Red Blood Cell Count}}}{1 + e^{\text{intercept + slope * Red Blood Cell Count}}} = \frac{e^{\text{odds of anemia}}}{1 + e^{\text{odds of anemia}}} $$
-
-<i> Remember: </i> there is one predicted probability for each observation. This predicts the probability of having anemia for that patient, based on the patient's score on the Red Blood Cell Count variable.
-
-```{python}
-# store the intercept as a python variable
-log_reg_intercept = min_log_reg.x[0]
-
-# store the slope as a python variable
-log_reg_slope = min_log_reg.x[1]
-
-# generate the predicted odds of having anemia (using the tricks from above)
-predicted_odds_log_reg = np.e**(log_reg_intercept + log_reg_slope * hgb_app['Hemoglobin'])
-
-# generate the predicted probability of having anemia (using the tricks from above)
-predicted_probs_log_reg = predicted_odds_log_reg/(1 + predicted_odds_log_reg)
-
-predicted_probs_log_reg
-```
-
-Let's plot the predictions against the actual data:
-
-```{python}
-# do not worry about this code, it just generates the graph
-plt.figure(figsize = (10, 4))
-plt.scatter(hgb_app['Hemoglobin'], hgb_app['appetite_dummy'], label = 'not anemic')
-plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'], 
-                             hgb_app[hgb_app['Appetite'] == 'yes']['appetite_dummy'], color = 'red',
-            label = 'anemic')
-plt.scatter(hgb_app['Hemoglobin'], predicted_probs_log_reg, 
-            label = 'predicted probability of anemia (logistic regression)', color = 'green')
-plt.xlabel('Hemoglobin')
-plt.ylabel('Anemia \n(0 = no, 1 = yes)')
-plt.legend()
-plt.yticks([0,0.5, 1]);
-```
-
-Just for comparison, let's also show the predictions we got when we predicted the probabilities using the slope and intercept that we got from linear regression:
-
-```{python}
-# do not worry about this code, it just generates the graph
-plt.figure(figsize = (10, 4))
-plt.scatter(hgb_app['Hemoglobin'], hgb_app['appetite_dummy'], label = 'not anemic')
-plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'],
-                             hgb_app[hgb_app['Appetite'] == 'yes']['appetite_dummy'], color = 'red',
-            label = 'anemic')
-plt.scatter(hgb_app['Hemoglobin'], predicted_probs_log_reg,
-            label = 'predicted probability of anemia (logistic regression)', color = 'green')
-plt.scatter(hgb_app['Hemoglobin'], predicted_lin_reg,
-            label = 'predicted probability of anemia (linear regression)', color = 'orange')
-plt.xlabel('Hemoglobin')
-plt.ylabel('Anemia \n(0 = no, 1 = yes)')
-plt.legend()
-plt.yticks([0,0.5, 1]);
-```
-
-We can see that logistic regression fits the data much better.
-
-With logistic regression, the predicted probability of having anemia falls steeply as the Red Blood Cell Count increases.
-
-The predicted probabilities from linear regression overestimate the probability of anemia at higher values of Red Blood Cell Count.
-
-You can see that the predictions from logistic regression form an 'S' shape. This is a nonlinear function called a <i> sigmoid function. </i>
-
-Linear regression fits a <i> line to directly predict outcome scores, based on scores on a predictor variable.</i>
-
-Logistic regression fits a <i> sigmoid function to predict the probability of being in one of two categories, based on scores on a predictor variable </i>.
+To show this is standard, let us do the same regression in Statsmodels
 
 ## Logistic Regression with statsmodels
 
 As with linear regression, we can easily perform logistic regression using statsmodels.
 
-To do this, we first have to add a column of 1's to the predictor variable. This is to ensure the intercept is fitted correctly, though we will not explore why - just remember to do it in order to get better estimates! We can use the statsmodels function `add_constant()` to do this:
-
-<i> Note: here we are using `statsmodels.api` rather than `statsmodels.formula.api` </i> 
-
 ```{python}
-list(df)
-```
-
-```{python}
+# Get the formula interface for Statsmodels
 import statsmodels.formula.api as smf
 ```
 
 ```{python}
-# Creating the model
-op_col = 'Appetite'
-val_1 = 'good'
-ip_col = 'Hemoglobin'
-ip_df = df.loc[:, [op_col, ip_col]]
-ip_df['dummy'] = (ip_df[op_col] == val_1).astype(int)
-ip_df.plot.scatter(ip_col, 'dummy')
-```
-
-```{python}
-col_is_obj = df.dtypes == object
-category_cols = df.columns[col_is_obj]
-num_cols = df.columns[~col_is_obj]
-nums = df.replace({'yes': 1, 'no': 0,
-                   'abnormal': 1, 'normal': 0,
-                   'present': 1, 'notpresent': 0,
-                   'good': 1, 'poor': 0
-                  }).astype(np.float)
-nums.corr().loc[category_cols, num_cols]
-```
-
-```{python}
-log_reg_mod = smf.logit('dummy ~ Q("{}")'.format(ip_col),
-                        data=ip_df)
-
+# Create the model.
+log_reg_mod = smf.logit('appetite_dummy ~ Hemoglobin', data=hgb_app)
+# Fit it.
 fitted_log_reg_mod = log_reg_mod.fit() # fitting the model
-
+# Show the summary.
 fitted_log_reg_mod.summary() # showing the model summary
 ```
 
-Look at the table above under 'coef'. Compare the logistic regression intercept and slope that statsmodels has obtained to the ones we obtained through using `minimize`:
+Notice Statsmodels lists the "Model" as "Logit" and the "Method" as "MLE" -
+Maximum Likelihood Estimation.
+
+Look at the table above under 'coef'. Compare the logistic regression intercept
+and slope that Statsmodels has obtained to the ones we obtained through using
+`minimize`:
 
 ```{python}
-print('Intercept from minimize =', log_reg_intercept)
-print('Slope from minimize =', log_reg_slope)
+print('Intercept from minimize =', inter_MLL)
+print('Slope from minimize =', slope_MLL)
 ```
 
-Finally, we can use the `predict` method of statsmodels to generate predicted
+Finally, we can use the `predict` method of Statsmodels to generate predicted
 probabilities from the logistic regression model we just fitted:
 
 ```{python}
-sm_predictions = fitted_log_reg_mod.predict(ip_df[ip_col])
-sm_predictions
+sm_predictions = fitted_log_reg_mod.predict(hgb_app['Hemoglobin'])
+sm_predictions.head()
 ```
 
-Let's plot the predicted probabilities of having anemia, from statsmodels:
+Let's plot the predicted probabilities of having "good" appetite, from
+Statsmodels:
 
-```{python}
-# do not worry about this code, it just generates the graph
-plt.figure(figsize = (10, 4))
-plt.scatter(hgb_app['Hemoglobin'], hgb_app['appetite_dummy'], label = 'not anemic')
-plt.scatter(hgb_app[hgb_app['Appetite'] == 'yes']['Hemoglobin'], 
-                             hgb_app[hgb_app['Appetite'] == 'yes']['appetite_dummy'], color = 'red',
-            label = 'anemic')
-plt.scatter(hgb_app['Hemoglobin'], sm_predictions,
-            label = 'predicted probability of anemia (statsmodels logistic regression)', color = 'cyan')
-plt.xlabel('Hemoglobin')
-plt.ylabel('Anemia \n(0 = no, 1 = yes)')
-plt.legend()
-plt.yticks([0,0.5, 1]);
+```{python tags=c("hide-cell")}
+plot_hgb_app()
+plt.scatter(hemoglobin, sm_predictions,
+            label = 'Statsmodels p', color = 'cyan')
+plt.legend();
 ```
 
-We can see graphically that these predictions look identical to the ones we obtained from minimize.
+We can see graphically that these predictions look identical to the ones we
+obtained from minimize.
 
-Let's see what the largest absolute difference between the predictions from the two methods is:
+Let's see what the largest absolute difference between the predictions from the
+two methods is:
 
 ```{python}
-np.max(np.abs(predicted_probs_log_reg - sm_predictions))
+np.max(np.abs(predicted_MLL - sm_predictions))
 ```
 
 That is very close to 0. The models are making almost identical predictions.
