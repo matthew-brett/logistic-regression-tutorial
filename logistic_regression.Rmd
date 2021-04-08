@@ -967,7 +967,7 @@ labels, given the predictions.
 
 If the predictions are closer to the actual values, the likelihood will be
 larger, and closer to 1.  When the predictions are not close, the likelihood
-will be low, and close to 0.
+will be low, and closer to 0.
 
 Here is the likelihood for our intercept of -7 and slope of 0.8.
 
@@ -979,17 +979,19 @@ likelihood
 
 This is a very small number.  Likelihoods are often close to 0 with a
 reasonable number of points, and somewhat inexact prediction, because there
-tend to be a fairly large number of small p values in `pp_of_labels`.  The
+tend to be a reasonable number of small p values in `pp_of_labels`.  The
 question is - do other values for the intercept and slope give smaller or
 larger values for the likelihood?
 
-We can put this *likelihood* scoring into our cost function, instead of using sum of squares.
+We can put this *likelihood* scoring into our cost function, instead of using
+scoring with the sum of squares.
 
 One wrinkle is that we want our cost function value to be *lower* when the line
-is good, but the likelihood is *higher* when the line is a good one.  We solve
-this by sticking a minus on the likelihood before we return from the cost
-function. This makes `minimize` find the parameters giving the *minimum* of the
-*negative likelihood*, and therefore, the *maximum likelihood* (ML).
+is a good predictor, but the likelihood is *higher* when the line is a good
+predictor. We solve this simply by sticking a minus on the likelihood before we
+return from the cost function. This makes `minimize` find the parameters giving
+the *minimum* of the *negative likelihood*, and therefore, the *maximum
+likelihood* (ML).
 
 ```{python}
 def simple_ml_logit_cost(intercept_and_slope, x, y):
@@ -1006,13 +1008,17 @@ def simple_ml_logit_cost(intercept_and_slope, x, y):
     return -likelihood
 ```
 
-We can try that cost function, starting at our familiar intercept of -7 and slope of 0.8.
+We can try that cost function, starting at our familiar intercept of -7 and
+slope of 0.8.
 
 Before we do, there is one extra wrinkle, that we will solve in another way
 further down the notebook.  At the moment the likelihood values we are
 returning are very small - in the order of $10^{13}$.  We expect scores for
-different plausible lines to differ by an even small amount.  By default,
-`minimize` will treat these very small differences as insignificant.  We can tell it to pay attention to these kind of differences by passing a very small value to the `tol` parameter (`tol` for *tolerance*).
+different plausible lines to differ from each other by an even smaller number.
+By default, `minimize` will treat these very small differences as
+insignificant.  We can tell `minimize` to pay attention to these tiny
+differences by passing a very small value to the `tol` parameter (`tol` for
+*tolerance*).
 
 ```{python}
 mr_ML = minimize(simple_ml_logit_cost,  # Cost function
@@ -1023,7 +1029,9 @@ mr_ML = minimize(simple_ml_logit_cost,  # Cost function
 mr_ML
 ```
 
-`minimize` is complaining that it was not happy with the numerical accuracy of its answer, and we will address that soon.  For now, lets look at the predictions to see if they are reasonable.
+`minimize` complains that it was not happy with the numerical accuracy of its
+answer, and we will address that soon.  For now, let us look at the predictions
+to see if they are reasonable.
 
 ```{python}
 inter_ML, slope_ML = mr_ML.x
@@ -1038,14 +1046,17 @@ plt.legend();
 
 ## A computation trick for the likelihood
 
-As you've seen, the likelihood values can be, and often are, very small, and close to zero.
+As you have seen, the likelihood values can be, and often are, very small, and
+close to zero.
 
-You may also know standard numerical calculations on computers are not
+You may also know that standard numerical calculations on computers are not
 completely precise; the calculations are only accurate to around 16 decimal
 places.  This is because of the way computers store floating point numbers.
+You can find more detail in [this page on floating point
+numbers](http://matthew-brett.github.io/teaching/floating_point.html).
 
-The combination of low likelihood values, and limited calculation precision can
-be a problem for the simple ML logistic cost function you see above.  As a
+The combination of small likelihood values, and limited calculation precision,
+can be a problem for the simple ML logistic cost function you see above.  As a
 result, practical implementations of logistic regression use an extra trick to
 improve the calculation accuracy of the likelihoods.
 
@@ -1058,15 +1069,20 @@ print('Multiplying two numbers', 11 * 15)
 print('Adding, inverting the logs', np.exp(np.log(11) + np.log(15)))
 ```
 
-What you see here is that we get the same answer if we:
+What you see here is that we get (almost) the same answer if we:
 
 * Multiply two numbers OR
 * If we take the logs of the two numbers, *add them*, then reverse the log
   operation, in the this case with `np.exp`.
 
-We can replace multiplication by addition, if we take the logs of the values.
+We get *almost* the same number because of the limitations of the precision of
+the calculations.  For our cases, we do not need to worry about these tiny
+differences.
 
-Here we do the same log-then-add-then-unlog trick on a array of numbers:
+The log-add-unlog trick means that we can replace multiplication by addition,
+if we take the logs of the values.
+
+Here we do the same trick on an array of numbers:
 
 ```{python}
 some_numbers = np.array([11, 15, 1, 0.3])
@@ -1074,7 +1090,8 @@ print('Product of the array', np.prod(some_numbers))
 print('Log-add-unlog on the array', np.exp(np.sum(np.log(some_numbers))))
 ```
 
-We can use this trick to calculate our likelihood by adding logs instead of multiplying the probabilities directly:
+We can use this same trick to calculate our likelihood by adding logs instead
+of multiplying the probabilities directly:
 
 ```{python}
 print('Likelihood with product of array', np.prod(pp_of_label))
@@ -1087,7 +1104,11 @@ print('Likelihood with log-add-unlog', np.exp(log_likelihood))
 This doesn't seem to have solved all our problem, because we still end up with
 the type of tiny number that confuses `minimize`.
 
-The next stage of the solution is to realize that the `minimize` does not need the actual likelihood, it needs some number that goes up or down in exactly the same way as likelihood.  If the cost function can return some number that goes up when likelihood goes up, and goes down when likelihood goes down, `minimize` will still find the same parameters to minimize this cost function.
+The next stage of the solution is to realize that the `minimize` does not need
+the *actual likelihood*, it needs some number that goes *up or down in exactly
+the same way as likelihood*.  If the cost function can return some number that
+goes up when likelihood goes up, and goes down when likelihood goes down,
+`minimize` will still find the same parameters to minimize this cost function.
 
 Specifically we want the value that comes back from the cost function to vary
 [monotonically](https://en.wikipedia.org/wiki/Monotonic_function) with the
@@ -1096,29 +1117,31 @@ pair `p1` and the second pair `p2`.  Call the likelihoods for `p1` and `p2`:
 `L2` and `L2` respectively.  Say we've got another way of calculating a value
 for `p1` and `p2`, and the values that come back are `M1` and `M2`
 respectively.  We can swap this other way into our cost function as long as
-it's always true that: when `L1 > L2` then `M1 > M2`; when `L1 < L2` then `M1 <
-M2`; and when `L1 == L2`, `M1 == M2`.  In that case we call our new calculation
-generating `M1` and `M2` *monotonic* with respect to the original calculation
-generating `L1` and `L2`.  In our case this original calculation is likelihood.
-The new monotonic calculation is the *log likelihood*.
+it is always true that: when `L1 > L2` then `M1 > M2`; when `L1 < L2` then `M1
+< M2`; and when `L1 == L2`, `M1 == M2`.  In that case we call our new
+calculation generating `M1` and `M2` *monotonic* with respect to the original
+calculation generating `L1` and `L2`.  In our case this original calculation is
+likelihood. The new monotonic calculation is the *log likelihood*.
 
 You may be able to see that if the likelihood goes up, then the log of
-likelihood will also go up, and vice versa.
+likelihood will also go up, and vice versa, so the log of the likelihood is monotonic with respect to the likelihood, and we can use it instead of the likelihood, in our cost function.
 
-This means that, for our cost function, we don't have to do the last nasty
-unlog step above, that generates the tiny number.  We can just return the
-(minus of the) log of the likelihood.  The log of the likelihood turns out to
-be a manageable negative number, even when the resulting likelihood is tiny.
+This means that our cost function does not have to do the last nasty unlog step
+above, that generates the tiny number.  We can just return the (minus of the)
+log of the likelihood.  The log of the likelihood turns out to be a manageable
+negative number, even when the resulting likelihood is tiny.
 
 ```{python}
 log_likelihood
 ```
 
-This trick gives us a much more stable way of returning something from the cost function.  That something will vary in the same as the likelihood - but it will no longer suffer from the calculation errors we expect from very small numbers:
+This trick gives us a much more tractable number to return from the cost
+function, because the log likelihood is much less affected by errors from lack
+of precision in the calculation.
 
 ```{python}
 def mll_logit_cost(intercept_and_slope, x, y):
-    """ More stable version of cost function for maximum likelihood
+    """ Cost function for maximum log likelihood
 
     Return minus of the log of the likelihood.
     """
@@ -1134,6 +1157,8 @@ def mll_logit_cost(intercept_and_slope, x, y):
     return -log_likelihood
 ```
 
+Use the new cost function:
+
 ```{python}
 mr_MLL = minimize(mll_logit_cost,  # Cost function
                   [-7, 0.8],  # Guessed intercept and slope
@@ -1143,10 +1168,11 @@ mr_MLL = minimize(mll_logit_cost,  # Cost function
 mr_MLL
 ```
 
-Notice that we did not have to tell `minimize` to use a very small value for the tolerance this time.
+Notice that we did not have to tell `minimize` to use a very small value for
+the tolerance this time.
 
-The values that come back are very similar to the more fragile version using the
-likelihood:
+The values that come back are very similar to our previous, more fragile
+version that used the likelihood:
 
 ```{python}
 inter_MLL, slope_MLL = mr_MLL.x
@@ -1160,13 +1186,15 @@ plt.title('Maximum log likelihood cost function')
 plt.legend();
 ```
 
-You have just seen the standard calculations behind most packages that implement logistic regression.
+You have just seen the standard calculations behind most packages that
+implement logistic regression.
 
 To show this is standard, let us do the same regression in Statsmodels
 
-## Logistic Regression with statsmodels
+## Logistic Regression with Statsmodes
 
-As with linear regression, we can easily perform logistic regression using statsmodels.
+As with linear regression, we can easily perform logistic regression using
+Statsmodels.
 
 ```{python}
 # Get the formula interface for Statsmodels
@@ -1177,17 +1205,16 @@ import statsmodels.formula.api as smf
 # Create the model.
 log_reg_mod = smf.logit('appetite_dummy ~ Hemoglobin', data=hgb_app)
 # Fit it.
-fitted_log_reg_mod = log_reg_mod.fit() # fitting the model
-# Show the summary.
-fitted_log_reg_mod.summary() # showing the model summary
+fitted_log_reg_mod = log_reg_mod.fit()
+fitted_log_reg_mod.summary()
 ```
 
-Notice Statsmodels lists the "Model" as "Logit" and the "Method" as "MLE" -
-Maximum Likelihood Estimation.
+Notice that Statsmodels lists the "Model" as "Logit" and the "Method" as "MLE"
+- Maximum Likelihood Estimation.
 
 Look at the table above under 'coef'. Compare the logistic regression intercept
-and slope that Statsmodels has obtained to the ones we obtained through using
-`minimize`:
+and slope that Statsmodels found to the ones we got from `minimize` and the
+maximum log likelihood (MLL) cost function.
 
 ```{python}
 print('Intercept from minimize =', inter_MLL)
@@ -1195,14 +1222,14 @@ print('Slope from minimize =', slope_MLL)
 ```
 
 Finally, we can use the `predict` method of Statsmodels to generate predicted
-probabilities from the logistic regression model we just fitted:
+probabilities from the logistic regression model we have just fitted:
 
 ```{python}
 sm_predictions = fitted_log_reg_mod.predict(hgb_app['Hemoglobin'])
 sm_predictions.head()
 ```
 
-Let's plot the predicted probabilities of having "good" appetite, from
+Let us plot the predicted probabilities of having "good" appetite, from
 Statsmodels:
 
 ```{python tags=c("hide-cell")}
@@ -1215,8 +1242,8 @@ plt.legend();
 We can see graphically that these predictions look identical to the ones we
 obtained from minimize.
 
-Let's see what the largest absolute difference between the predictions from the
-two methods is:
+Let us see what the largest absolute difference between the predictions from
+the two methods is:
 
 ```{python}
 np.max(np.abs(predicted_MLL - sm_predictions))
