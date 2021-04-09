@@ -19,7 +19,8 @@ jupyter:
 ```{python tags=c("hide-cell")}
 import numpy as np
 # Don't use exponential notation in showing values in arrays.
-np.set_printoptions(suppress=True)
+# Only show array values to 4 decimal digits
+np.set_printoptions(suppress=True, precision=4)
 ```
 
 This is a whirlwind tour of logarithms.
@@ -249,4 +250,166 @@ b_for_e = np.log(a)
 print('Result (b_for_e) of log10 on a', b_for_e)
 c_for_e = np.e ** b_for_e
 print('Result of 10 raised to power b_for_e restores original a', c_for_e)
+```
+
+## Multiplying is adding with logarithms
+
+One very important property of logarithms is that, once we have transformed
+values to logs, addition becomes equivalent to multiplication of the original
+values.
+
+This is easiest to see by example.  Here we multiply two numbers:
+
+```{python}
+y = 100 * 1000
+y
+```
+
+We can do the same operation by:
+
+* Taking the logarithm transform of the numbers.
+* Adding the two logarithms.
+* Inverting the logarithm transform by raising the result to the corresponding
+  power.
+
+We call this the log-add-unlog procedure.  Using this procedure, we replace
+multiplication by addition of logs.
+
+Let us see that in action:
+
+```{python}
+# log of input numbers.
+v1 = np.log10(100)
+v2 = np.log10(1000)
+# add the logs
+v3 = v1 + v2
+# unlog by raising to the power of the result.
+y_from_log = 10 ** v3
+y_from_log
+```
+
+We can also do these operations on multiple values with arrays.
+
+```{python}
+# Standard multiplication.
+arr = np.array([100, 1000])
+# np.prod multiplies the elements of the array
+print('Product of array', np.prod(arr))
+```
+
+Here's the log-add-unlog method on the array:
+
+
+```{python}
+# Log
+log_arr = np.log10(arr)
+log_arr
+```
+
+```{python}
+# Add
+log_sum = np.sum(log_arr)
+```
+
+```{python}
+# Unlog.
+print('log-add-unlog of array', 10 * log_sum)
+```
+
+Why does this work?
+
+Here is the mathematical notation for original multiplication:
+
+$$
+y = 100 * 1000
+$$
+
+We can also write this as:
+
+$$
+y = 10^2 * 10^3
+$$
+
+We can also write out the raised-to-the-power parts longhand, like this:
+
+$$
+y = (10 * 10) * (10 * 10 * 10)
+$$
+
+Dropping the brackets, that have no effect, we see that this is also equal to:
+
+$$
+y = 10^{2 + 3} = 10^5
+$$
+
+The rule we discovered here is that multiplying numbers expressed as 10 raised
+to the power of exponents, gives 10 to the power of (the addition of the
+exponents).
+
+To take another example, you may remember that raising a number to the power of 0.5 is the same as the square root of that number.  So:
+
+```{python}
+print('10 raised to the power of 0.5', 10 ** 0.5)
+print('is the same as sqrt 10', np.sqrt(10))
+```
+
+Now consider:
+
+$$
+y = 10^{0.5} * 10^{0.5}
+$$
+
+We can re-express this as:
+
+$$
+y = \sqrt{10} * \sqrt{10} = 10
+$$
+
+Again, the adding exponents rule works because:
+
+$$
+y = 10^{0.5} * 10^{0.5} = 10^{0.5 + 0.5} = 10^1 = 10
+$$
+
+You may now be able to see why the log-add-unlog trick works.  The log stage
+extracts the exponents.  The addition is adding the exponents as above.  The
+unlog stage in sticking the exponent back onto the original base number - in
+our case, 10.
+
+```{python}
+arr = np.array([1, 10, 100, 1000, np.sqrt(10)])
+print('Array:', arr)
+print('Product of array:', np.prod(arr))
+log_arr = np.log10(arr)
+print('Corresponding exponents for 10:', log_arr)
+log_sum = np.sum(log_arr)
+print('Exponents added:', log_sum)
+# unlog
+print('Raised to the power of 10:', 10 ** log_sum)
+```
+
+You may also be able to see that the same log-add-unlog trick for any log
+base.  The exponents corresponding to each input number will differ for each
+log base, and the unlog step needs to raise the power of the log base.
+
+```{python}
+print('Array:', arr)
+log2_arr = np.log2(arr)
+print('Corresponding exponents for 2:', log2_arr)
+log2_sum = np.sum(log2_arr)
+print('Exponents added:', log2_sum)
+# unlog
+print('Raised to the power of 2:', 2 ** log2_sum)
+```
+
+Or base `np.e`:
+
+```{python}
+print('Array:', arr)
+loge_arr = np.log(arr)
+print('Corresponding exponents for np.e:', loge_arr)
+loge_sum = np.sum(loge_arr)
+print('Exponents added:', loge_sum)
+# unlog
+print('Raised to the power of np.e:', np.e ** loge_sum)
 ```
