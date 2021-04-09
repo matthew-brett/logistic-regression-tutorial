@@ -51,9 +51,10 @@ df = pd.read_csv('ckd_clean.csv')
 # Our columns of interest.
 hgb_app = df.loc[:, ['Hemoglobin', 'Appetite']].copy()
 # Dummy value column containing 0 for "poor" Appetite, 1 for "good".
-good_appetite = hgb_app['Appetite'] == 'good'
-# Convert to an integer (1 for True, 0 for False), and store.
-hgb_app['appetite_dummy'] = good_appetite.astype(int)
+hgb_app['appetite_dummy'] = hgb_app['Appetite'].replace(
+    ['poor', 'good'],
+    [0, 1])
+hgb_app.head()
 ```
 
 We take out the columns we are interested in for our further use:
