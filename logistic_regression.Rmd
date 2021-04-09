@@ -1278,6 +1278,9 @@ This tutorial has shown you how to do binary logistic regression with one numeri
 
 ## Exercises for reflection
 
+You might want to read the [logarithm refresher](logarithms_refreshed) page for
+these questions.
+
 * Consider the expression `np.exp(y)` in the `inv_logit` expression above.
   This means "raise `np.e` to the power of the values in `y`", and could
   equally well be written as `np.e ** y` (it would give exactly the same
