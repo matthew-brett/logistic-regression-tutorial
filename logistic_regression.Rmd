@@ -1254,3 +1254,27 @@ That is very close to 0. The models are making almost identical predictions.
 ## Summary
 
 This tutorial has shown you how to do binary logistic regression with one numerical predictor variable.
+
+
+## Exercises for reflection
+
+* Consider the expression `np.exp(y)` in the `inv_logit` expression above.
+  This means "raise `np.e` to the power of the values in `y`", and could
+  equally well be written as `np.e ** y` (it would give exactly the same
+  result).  Now consider changing `np.exp(y)` to `10 ** y`.  Now we are working
+  in base 10 instead of base `np.e`.  What would happen to:
+
+  * The best-fit p values predictions returned via `minimize`?
+  * The slope and intercept of the best-fit log-odds straight line?
+
+  Reflect, using the reasoning here, then try it and see.
+
+* Consider the expression `np.sum(np.log(pp_of_labels))` in the
+  `mll_logit_cost` cost function.  This is using `np.log`, which is log to the
+  base `np.e`.  Consider what would happen if you change this expression to
+  `np.sum(np.log10(pp_of_labels))` (log to the base 10).  What would happen to:
+
+  * The best-fit p values predictions returned via `minimize`?
+  * The slope and intercept of the best-fit log-odds straight line?
+
+  Reflect, using the reasoning here, then try it and see.
