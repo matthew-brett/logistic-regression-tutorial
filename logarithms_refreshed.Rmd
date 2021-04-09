@@ -313,7 +313,7 @@ log_sum = np.sum(log_arr)
 
 ```{python}
 # Unlog.
-print('log-add-unlog of array', 10 * log_sum)
+print('log-add-unlog of array', 10 ** log_sum)
 ```
 
 Why does this work?
@@ -388,11 +388,12 @@ print('Exponents added:', log_sum)
 print('Raised to the power of 10:', 10 ** log_sum)
 ```
 
-You may also be able to see that the same log-add-unlog trick for any log
+You may also be able to see that the same log-add-unlog trick works for any log
 base.  The exponents corresponding to each input number will differ for each
 log base, and the unlog step needs to raise the power of the log base.
 
 ```{python}
+print('Log-add-unlog for log base 2')
 print('Array:', arr)
 log2_arr = np.log2(arr)
 print('Corresponding exponents for 2:', log2_arr)
@@ -405,6 +406,7 @@ print('Raised to the power of 2:', 2 ** log2_sum)
 Or base `np.e`:
 
 ```{python}
+print('Log-add-unlog for log base e')
 print('Array:', arr)
 loge_arr = np.log(arr)
 print('Corresponding exponents for np.e:', loge_arr)
