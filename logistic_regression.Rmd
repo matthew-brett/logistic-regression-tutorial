@@ -109,10 +109,11 @@ represent "poor".  This kind of recoding, where we replace category labels
 with 1 and 0 values, is often called *dummy coding*.
 
 ```{python}
-# Make a Boolean Series (True, False)
-good_appetite = hgb_app['Appetite'] == 'good'
-# Convert to an integer (1 for True, 0 for False), and store.
-hgb_app['appetite_dummy'] = good_appetite.astype(int)
+# 'replace' replaces the values in the first argument with the corresponding
+# values in the second argument.
+hgb_app['appetite_dummy'] = hgb_app['Appetite'].replace(
+    ['poor', 'good'],
+    [0, 1])
 hgb_app.head()
 ```
 
@@ -161,8 +162,16 @@ Remember that, in linear regression, we predict scores on the *outcome*
 variable (or column) using a straight-line relationship of the *predictor*
 variable (or column).
 
-Why not use this same technique for our case?  After all, the `appetite_dummy`
-values are just numbers (0 and 1), as are our `Hemoglobin` values.
+Here are the predictor and outcome variables in our case.
+
+```{python}
+# The x (predictor) and y (outcome) variables.
+hemoglobin = hgb_app['Hemoglobin']
+appetite_d = hgb_app['appetite_dummy']
+```
+
+Why not use the same linear regression technique for our case?  After all, the
+`appetite_d` values are just numbers (0 and 1), as are our `hemoglobin` values.
 
 Earlier in the textbook, we performed linear regression by using `minimize`, to
 find the value of the slope and intercept of the line which gives the smallest
@@ -182,7 +191,7 @@ print('Rows in CKD data', len(hgb_app))
 ```
 
 "observations" (patients), so there will be the same number of scores on the
-predictor variable (`Hemoglobin`), and the same number of predictions, in
+predictor variable (`hemoglobin`), and the same number of predictions, in
 `predicted`. By contrast, the slope and intercept are single values, defining
 the line.
 
@@ -227,9 +236,6 @@ squared prediction errors.
 Let's use linear regression on the current example.  From looking at our plot above, we start with a guess of -1 for the intercept, and 0.1 for the slope.
 
 ```{python}
-# The x (predictor) and y (to-be-predicted) variables.
-hemoglobin = hgb_app['Hemoglobin']
-appetite_d = hgb_app['appetite_dummy']
 # Use minimize to find the least sum of squares solution.
 min_lin_reg = minimize(ss_any_line, [-1, 0.1], args=(hemoglobin, appetite_d))
 # Show the results that came back from minimize.
@@ -298,7 +304,8 @@ course, cannot occur in the `appetite_d` values, which are restricted to 0 or
 Looking at the plot, without the regression line, it looks as if we can be
 fairly confident of predicting a 1 ("good") value for a hemoglobin above 12.5, but we are increasingly less confident about predicting a 1 value as hemoglobin drops down to about 7.5, at which point we become confident about predicting a 0 value.
 
-These reflections make as wonder whether we should be using something other than a simple, unconstrained straight line for our predictions.
+These reflections make as wonder whether we should be using something other
+than a simple, unconstrained straight line for our predictions.
 
 
 ## Another prediction line
@@ -307,7 +314,8 @@ These reflections make as wonder whether we should be using something other than
 Here's another prediction line we might use for `appetite_d`, with the
 predicted values.
 
-For the moment, please don't worry about how we came by this line, we will come onto that soon.
+For the moment, please don't worry about how we came by this line, we will come
+onto that soon.
 
 The new prediction line is in gold.
 
@@ -372,10 +380,10 @@ straight line - for example, in the `ss_any_line` function.   How can we get
 minimize to predict from a family of sigmoid curves, as here?  Is there a way
 of transforming a sigmoid curve like the one here, with y values from 0 to 1,
 to a straight line, where the y values can vary from large negative to large
-positive.  We would like to do such a conversion, so we have a slope and
+positive?  We would like to do such a conversion, so we have a slope and
 intercept that `minimize` can work with easily.
 
-The answer, you can imagine, is "yes" - we can go from our sigmoid 0 / 1 curve
+The answer, you can imagine, is "yes" — we can go from our sigmoid 0 / 1 curve
 to a straight line with unconstrained y values, in two fairly simple steps. The
 next sections will cover those steps.  The two steps are:
 
@@ -735,10 +743,10 @@ values.  But these predictions are for the log-odds transformed values, on the
 straight line.  So the cost function then converts the predictions into p value
 predictions, on the corresponding sigmoid, and compares these predictions to the 0 / 1 values in `appetite_d`.
 
-For example, let's say I want to get a score for the intercept -7 and the slope
-0.8.
+For example, let's say we want to get a score for the intercept -7 and the
+slope 0.8.
 
-First I get the straight-line predictions in the usual way:
+First we get the straight-line predictions in the usual way:
 
 ```{python}
 intercept, slope = -7, 0.8
@@ -749,7 +757,8 @@ plt.xlabel('Hemoglobin')
 plt.ylabel('Straight-line (log-odds) predictions')
 ```
 
-These are predictions on the straight line, but I now need to transform them to p value (0 to 1) predictions on the sigmoid.  I use `inv_logit`:
+These are predictions on the straight line, but we now need to transform them
+to p value (0 to 1) predictions on the sigmoid.  We use `inv_logit`:
 
 ```{python}
 sigmoid_predictions = inv_logit(sl_predictions)
@@ -759,7 +768,9 @@ plt.xlabel('Hemoglobin')
 plt.ylabel('Sigmoid (p-value) predictions')
 ```
 
-Finally, I want to compare the predictions to the actual data to get a score.  One way I could do this is our good old sum of squares difference between the sigmoid p-value predictions and the 0 / 1 values:
+Finally, we want to compare the predictions to the actual data to get a score.
+One way we could do this is our good old sum of squares difference between the
+sigmoid p-value predictions and the 0 / 1 values:
 
 ```{python}
 sigmoid_error = appetite_d - sigmoid_predictions
@@ -767,7 +778,9 @@ sigmoid_score = np.sum(sigmoid_error ** 2)
 sigmoid_score
 ```
 
-To build my cost function, first I make a function to calculate my predicted p values from a slope and intercept and the x-axis values we are predicting from:
+To build the cost function, we first make a function to calculate the predicted
+p values from a slope and intercept and the x-axis values we are predicting
+from:
 
 ```{python}
 def params2pps(intercept, slope, x):
@@ -778,7 +791,7 @@ def params2pps(intercept, slope, x):
     return inv_logit(predicted_log_odds)
 ```
 
-Next I make the cost function that minimize will use.  It must accept an array
+Next we make the cost function that minimize will use.  It must accept an array
 of parameters (an intercept and slope), and calculate the sum of squares error,
 using the predicted p-values:
 
@@ -800,7 +813,10 @@ We check our function gives the same results as the step-by-step calculation abo
 ss_logit([-7, 0.8], hemoglobin, appetite_d)
 ```
 
-Notice what is happening here.  The cost function gets the new intercept and slope to try, makes the predictions from the intercept and slope, converts the predictions to probabilities on the sigmoid, and tests those against the real labels.
+Notice what is happening here.  The cost function gets the new intercept and
+slope to try, makes the predictions from the intercept and slope, converts the
+predictions to probabilities on the sigmoid, and tests those against the real
+labels.
 
 Now let's see the cost function in action:
 
@@ -844,12 +860,14 @@ that we know of, use the *likelihood* measure that we describe below, instead
 of the sum of squares measure you see above.
 
 Likelihood asks the question: assuming our predicting line, how likely are the
-actual 0 / 1 values that we see?
+sequence of actual 0 / 1 values that we see?
 
 To answer this question, we first ask this question about the individual 0 / 1
 values.
 
-We start with our intercept of -7 and slope of 0.8 for the straight-line log-odds values.  We generate the straight-line predictions, then convert them to sigmoid p-value predictions.
+We start with our intercept of -7 and slope of 0.8 for the straight-line
+log-odds values.  We generate the straight-line predictions, then convert them
+to sigmoid p-value predictions.
 
 ```{python}
 log_odds_predictions = -7 + hemoglobin * 0.8
@@ -925,11 +943,13 @@ hgb_predicted['pp_of_label'] = pp_of_label
 hgb_predicted
 ```
 
-There's a fancy short-cut to the several lines above.  We can form the
-`pp_of_label` column by first multiplying the 0 / 1 label column by the
-`pp_of_1`.  This correctly sets the `pp_of_label` values for labels of 1, and
-sets the remainder to 0.  Then we reverse the 0 / 1 labels by subtracting from
-1, and multiply by `pp_of_0` to set the 0 values to their correct values.
+There's a fancy short-cut to the several lines above, that relies on the fact
+that multiplying by 0 gives 0.  We can form the `pp_of_label` column by first
+multiplying the 0 / 1 label column by the `pp_of_1`.  This correctly sets the
+`pp_of_label` values for labels of 1, and sets the remainder to 0.  Then we
+reverse the 0 / 1 labels by subtracting from 1, and multiply by `pp_of_0` to
+set the 0 values to their correct values.  Adding these two results gives us
+the correct set of values for both 1 and 0 labels.
 
 ```{python}
 # Set label == 1 values to predicted p, others to 0
@@ -1210,7 +1230,7 @@ fitted_log_reg_mod.summary()
 ```
 
 Notice that Statsmodels lists the "Model" as "Logit" and the "Method" as "MLE"
-- Maximum Likelihood Estimation.
+— Maximum Likelihood Estimation.
 
 Look at the table above under 'coef'. Compare the logistic regression intercept
 and slope that Statsmodels found to the ones we got from `minimize` and the
