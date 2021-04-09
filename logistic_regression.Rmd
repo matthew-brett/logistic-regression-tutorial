@@ -7,7 +7,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.8.2
+      jupytext_version: 1.10.1
   kernelspec:
     display_name: Python 3
     language: python
@@ -167,11 +167,11 @@ Here are the predictor and outcome variables in our case.
 ```{python}
 # The x (predictor) and y (outcome) variables.
 hemoglobin = hgb_app['Hemoglobin']
-appetite_d = hgb_app['appetite_dummy']
+appetite_dummy = hgb_app['appetite_dummy']
 ```
 
 Why not use the same linear regression technique for our case?  After all, the
-`appetite_d` values are just numbers (0 and 1), as are our `hemoglobin` values.
+`appetite_dummy` values are just numbers (0 and 1), as are our `hemoglobin` values.
 
 Earlier in the textbook, we performed linear regression by using `minimize`, to
 find the value of the slope and intercept of the line which gives the smallest
@@ -190,10 +190,26 @@ value for each observation (row) in the dataset. In our case we have:
 print('Rows in CKD data', len(hgb_app))
 ```
 
-"observations" (patients), so there will be the same number of scores on the
-predictor variable (`hemoglobin`), and the same number of predictions, in
+158 rows means there are 158 "observations" (patients), so there will be the same number of scores on the
+predictor variable (`Hemoglobin`), and the same number of predictions, in
 `predicted`. By contrast, the slope and intercept are single values, defining
-the line.
+the line:
+
+$$
+\begin{bmatrix}
+           {\text{prediction for patiet 0}} \\
+           {\text{prediction for patient 1}} \\
+           {\text{prediction for patient 2}} \\
+           \vdots \\
+           {\text{prediction for patient 157}}
+         \end{bmatrix} = intercept + slope *\begin{bmatrix}
+           {11.2} \\
+           {9.5} \\
+           {10.8} \\
+           \vdots \\
+           {15.8}
+         \end{bmatrix}
+$$
 
 We used `minimize` to find the values of the slope and intercept which give the
 "best" predictions.  So far, we have almost invariably defined the *best*
@@ -237,7 +253,7 @@ Let's use linear regression on the current example.  From looking at our plot ab
 
 ```{python}
 # Use minimize to find the least sum of squares solution.
-min_lin_reg = minimize(ss_any_line, [-1, 0.1], args=(hemoglobin, appetite_d))
+min_lin_reg = minimize(ss_any_line, [-1, 0.1], args=(hemoglobin, appetite_dummy))
 # Show the results that came back from minimize.
 min_lin_reg
 ```
@@ -255,7 +271,7 @@ print('Best linear regression slope', lin_reg_slope)
 The linear regression model we are using here is:
 
 ```
-predicted_appetite_d = intercept + slope * hemoglobin
+predicted_appetite_dummy = intercept + slope * hemoglobin
 ```
 
 Specifically:
@@ -269,7 +285,7 @@ Let's plot our predictions, alongside the actual data.  We plot the predictions
 from linear regression in orange.
 
 ```{python tags=c("hide-cell")}
-# Do the base plot of the hemoglobin and appetite_d.
+# Do the base plot of the hemoglobin and appetite_dummy.
 plot_hgb_app()
 
 # A new plot on top of the old.
@@ -285,18 +301,18 @@ plt.legend();
 ```
 
 The linear regression line looks plausible, as far as it goes, but it has
-several unhappy features for our task of predicting the `appetite_d` 0 / 1
+several unhappy features for our task of predicting the `appetite_dummy` 0 / 1
 values.
 
 One thing to like about the line is that the predictions are right to suggest
-that the value of `appetite_d` is more likely to be 1 (meaning "good") at
+that the value of `appetite_dummy` is more likely to be 1 (meaning "good") at
 higher values of `hemoglobin`.  Also, the prediction line slopes upward as
 `hemoglobin` gets higher, indicating that the probability of good appetite gets
 higher as the hemoglobin concentration rises, across patients.
 
 However, when the `hemoglobin` gets higher than about 15.5, linear regression
-starts to predict a value for `appetite_d` that is greater than 1 - which, of
-course, cannot occur in the `appetite_d` values, which are restricted to 0 or
+starts to predict a value for `appetite_dummy` that is greater than 1 - which, of
+course, cannot occur in the `appetite_dummy` values, which are restricted to 0 or
 1.
 
 Looking at the plot, without the regression line, it looks as if we can be
@@ -309,7 +325,7 @@ than a simple, unconstrained straight line for our predictions.
 ## Another prediction line
 
 
-Here's another prediction line we might use for `appetite_d`, with the
+Here's another prediction line we might use for `appetite_dummy`, with the
 predicted values.
 
 For the moment, please don't worry about how we came by this line, we will come
@@ -326,7 +342,7 @@ def inv_logit(y):
     """ Reverse logit transformation
     """
     odds_ratios = np.exp(y)  # Reverse the log operation.
-    return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation.
+    return odds_ratios / (odds_ratios + 1)  # Reverse odds ratios operation; return probabilities
 
 
 def params2pps(intercept, slope, x):
@@ -343,7 +359,7 @@ predictions_new = params2pps(nice_intercept, nice_slope, hemoglobin)
 ```
 
 ```{python tags=c("hide-cell")}
-# Do the base plot of the hemoglobin and appetite_d.
+# Do the base plot of the hemoglobin and appetite_dummy.
 plot_hgb_app()
 
 # A new plot on top of the old.
@@ -360,20 +376,20 @@ plt.legend();
 The new not-straight line seems to have much to recommend it.  This shape of
 line is called "sigmoid", from the name of the Greek letter "s".  The sigmoid
 prediction here never goes above 1 or below 0, so its values are always in the
-range of the `appetite_d` data it is trying to predict.  It climbs steeply to a
+range of the `appetite_dummy` data it is trying to predict.  It climbs steeply to a
 prediction of 1, and plateaus there, as we get to the threshold of hemoglobin
 around 12.5, at which every patient does seem to have "good" appetite
-(`appetite_d` of 1).
+(`appetite_dummy` of 1).
 
 We can think of the values from the sigmoid curve as being *predicted
 probabilities*.  For example, at a `hemoglobin` value of 10, the curve gives a
-predicted y (`appetite_d`) value of about 0.73.  We can interpret this
+predicted y (`appetite_dummy`) value of about 0.73.  We can interpret this
 prediction as saying that, with a hemoglobin value of 10, there is a
 *probability* of about 0.73 that the corresponding patient will have a "good"
-appetite (`appetite_d` value of 1).
+appetite (`appetite_dummy` value of 1).
 
 Now let us say that we would prefer to use this kind of sigmoid line to predict
-`appetite_d`.  So far, we have only asked `minimize` to predict directly from a
+`appetite_dummy`.  So far, we have only asked `minimize` to predict directly from a
 straight line - for example, in the `ss_any_line` function.   How can we get
 minimize to predict from a family of sigmoid curves, as here?  Is there a way
 of transforming a sigmoid curve like the one here, with y values from 0 to 1,
@@ -443,7 +459,7 @@ logarithm steps.
 
 ## Probability and Odds
 
-
+<!-- #region -->
 For logistic regression, in contrast to linear regression, we are interested in
 predicting the *probability of an observation falling into a particular outcome
 class* (0 or 1).
@@ -464,26 +480,35 @@ the patient having a "poor" appetite is 1 - 0.88 --- about 0.12.
 
 So, the probability can express the *proportion of times* we expect to see some
 *event of interest* - in our case, the event of interest is "good" in the
-`Appetite` column.
+`Appetite` column:
 
-We can think of this same information as an *odds ratio*.
 
-We often express probabilities as odds ratios.  For example, we might say that
-the odds are 5 to 1 that it will rain today.   We mean that it is five times
-more likely that it will rain today than that it will not rain today.   On
-another day we could estimate that the odds are 0.5 to 1 that it will rain
-today, meaning that it is twice as likely *not* to rain, as it is to rain.
 
-The odds ratio is the number of times we expect to see the event of interest
-(e.g. rain) for every time we expect to see the event of no interest (not
-rain).
+$$\frac{139}{158} = 0.88 = \frac{\text{number of patients with good appetite}}{\text{total number of patients}}$$.
 
-This is just a way of saying a probability in a different way, and we can convert easily between probabilities and odds ratios.
+We can think of this same information as an *odds ratio*. 
+
+We often express probabilities as odds ratios. For example, we might say that the odds are 5 to 1 that it will rain today.  We mean that it is five times more likely that it will rain today than that it will not rain today.  On another day we could estimate that the odds are 0.5 to 1 that it will rain today, meaning that it is twice as likely *not* to rain, as it is to rain.
+
+The odds ratio is the number of times we expect to see the event of interest (e.g. rain) for every time we expect to see the event of no interest (not rain). 
+
+In our dataset the event of interest is a patient having a 'good' appetite, and the event of no interest is having a 'poor' appetite. So the odds ratio of having a good appetite is:
+
+$$\frac{139}{19} = 7.33 = \frac{\text{number of patients with good appetite}}{\text{number of patients with poor appetite}} $$.
+
+We can also express the odds ratio via the proportion of events, rather than the number of events:
+
+$$\frac{139/158}{19/158} = 7.33 = \frac{\text{proportion of patients with good appetite}}{\text{proportion of patients with poor appetite}} $$.
+
+The odds ratio is the same either way, whether we express it by the proportion of events or by the number of events.
+
+The odds ratio is just a way of saying a probability in a different way, and we can convert easily between probabilities and odds ratios.
 
 To convert from a probability to an odds ratio, we remember that the odds ratio is the number of times we expect to see the event of interest for every time we expect to see the event of no interest.   This is the probability (proportion) for the event of interest, divided by the probability (proportion) of the event of no interest.  Say the probability p is some value (it could be any value):
+<!-- #endregion -->
 
 ```{python}
-# Our proportion of interest.
+# Our proportion of interest 
 p = 0.88
 ```
 
@@ -499,7 +524,39 @@ Notice the odds ratio is greater than one, because `p` was greater than 0.5. An
 odds ratio of greater than one means the event of interest is more likely to
 happen than the alternative.  An odds ratio of less than one means p was less
 than 0.5, and the event of interest is less likely to happen than the
-alternative.   A p value of 0 gives an odds ratio of 0.  A p value of 1 gives:
+alternative. 
+
+To illustrate how the odds ratio changes as the number of events of interest/not of interest changes; the dataframe below some possible ways our 158 patients' data could have looked, and what the odds ratio would be in each instance. 
+
+The first row of the dataframe shows what the odds ratio of "good" appetite would be if all 158 patients had "poor" 
+appetite. 
+
+The final row of the dataframe shows what the odds ratio of "good" appetite would be if all 158 patients 
+had "good" appetite. The rows in between so show odds ratios between these extremes:
+
+```{python}
+# ignore this code it just generates the dataframe example below
+good = np.array([])
+poor = np.array([])
+n = len(hgb_app)
+for i in np.arange(158, step = 10):
+    num_good = i
+    good = np.append(good, num_good)
+    poor = np.append(poor, n - num_good)    
+num_good = 158
+good = np.append(good, num_good)
+poor = np.append(poor, n - num_good)
+odds_ratios =  good/poor
+illus = pd.DataFrame({'num. patients with good appetite': good.astype('int'),
+             'num. patients with poor appetite': poor.astype('int'),
+             'odds ratio': odds_ratios})
+illus.index = np.repeat('', len(illus))
+illus
+```
+
+We have just seen that `odds_ratio = p / (1 - p)`. If there are no events of interest, then `p == 0` and the odds ratio is 0, as you can see from the first row of the dataframe above. 
+
+If all of the events are events of interest (as in the final row of the dataframe above), then `p == 1` and this gives:
 
 ```{python tags=c("raises-exception")}
 1 / (1 - 1)
@@ -638,10 +695,22 @@ the sigmoid predictions.
 refresher](logarithms_refreshed) page):
 
 ```{python}
-# np.exp reverses the effect of np.log.
-some_values = np.array([1, 0.5, 3, 6, 0.1])
-values_back = np.exp(np.log(some_values))
-values_back
+# some values
+original_vals = np.array([1, 0.5, 3, 6, 0.1])
+
+original_vals
+```
+
+```{python}
+# log-transforming these values
+log_vals = np.log(original_vals)
+log_vals
+```
+
+```{python}
+# np.exp reverses the effect of np.log, it restores the logged values back to the original values
+vals_back = np.exp(log_vals)
+vals_back
 ```
 
 You have seen above that there is a simple formula to go from odds ratios to
@@ -743,7 +812,7 @@ In our case, we're going to make a cost function that takes the intercept and
 slope, and generates predictions using the intercept and slope and `hemoglobin`
 values.  But these predictions are for the log-odds transformed values, on the
 straight line.  So the cost function then converts the predictions into p value
-predictions, on the corresponding sigmoid, and compares these predictions to the 0 / 1 values in `appetite_d`.
+predictions, on the corresponding sigmoid, and compares these predictions to the 0 / 1 values in `appetite_dummy`.
 
 For example, let's say we want to get a score for the intercept -7 and the
 slope 0.8.
@@ -775,7 +844,7 @@ One way we could do this is our good old sum of squares difference between the
 sigmoid p-value predictions and the 0 / 1 values:
 
 ```{python}
-sigmoid_error = appetite_d - sigmoid_predictions
+sigmoid_error = appetite_dummy - sigmoid_predictions
 sigmoid_score = np.sum(sigmoid_error ** 2)
 sigmoid_score
 ```
@@ -801,7 +870,7 @@ def ss_logit(c_s, x_values, y_values):
 We check our function gives the same results as the step-by-step calculation above.
 
 ```{python}
-ss_logit([-7, 0.8], hemoglobin, appetite_d)
+ss_logit([-7, 0.8], hemoglobin, appetite_dummy)
 ```
 
 Notice what is happening here.  The cost function gets the new intercept and
@@ -812,7 +881,7 @@ labels.
 Now let's see the cost function in action:
 
 ```{python}
-min_res_logit = minimize(ss_logit, [-7, 0.8], args=(hemoglobin, appetite_d))
+min_res_logit = minimize(ss_logit, [-7, 0.8], args=(hemoglobin, appetite_dummy))
 min_res_logit
 ```
 
@@ -930,7 +999,7 @@ pp_of_0 = 1 - pp_of_1
 # the label == 0 values are now incorrect.
 pp_of_label = pp_of_1.copy()
 # Set the label == 0 values correctly.
-poor_appetite = appetite_d == 0
+poor_appetite = appetite_dummy == 0
 pp_of_label[poor_appetite] = pp_of_0[poor_appetite]
 # Put this into the data frame for display
 hgb_predicted['pp_of_label'] = pp_of_label
@@ -947,9 +1016,9 @@ the correct set of values for both 1 and 0 labels.
 
 ```{python}
 # Set label == 1 values to predicted p, others to 0
-pos_ps = appetite_d * pp_of_1
+pos_ps = appetite_dummy * pp_of_1
 # Set label == 0 values to 1-predicted p, others to 0
-neg_ps = (1 - appetite_d) * pp_of_0
+neg_ps = (1 - appetite_dummy) * pp_of_0
 # Combine by adding.
 final = pos_ps + neg_ps
 # This gives the same result as the code cell above:
@@ -961,12 +1030,43 @@ We can do the whole cell above in one line:
 
 ```{python}
 # Compact version of pp of label calculation.
-final_again = appetite_d * pp_of_1 + (1 - appetite_d) * (1 - pp_of_1)
+final_again = appetite_dummy * pp_of_1 + (1 - appetite_dummy) * (1 - pp_of_1)
 hgb_predicted['pp_again'] = final_again
 hgb_predicted
 ```
 
 When the `pp_of_label` values are near 1, this means the result was close to the prediction.  When they are near 0, it means the result was unlike the prediction.
+
+The scatterplot below shows this:
+
+```{python}
+good_appetites = hgb_predicted[hgb_predicted['appetite_dummy'] == 1].copy()
+poor_appetites = hgb_predicted[hgb_predicted['appetite_dummy'] == 0].copy()
+plt.scatter(good_appetites['pp_of_1'], good_appetites['pp_of_label'], color = 'red', label = 'good appetite (1)')
+plt.scatter(poor_appetites['pp_of_1'], poor_appetites['pp_of_label'], color = 'blue', label = 'poor appetite (0)')
+plt.xlabel('Predicted probability of being in class 1')
+plt.ylabel('Likelihood')
+plt.legend(loc = 'upper center' );
+```
+
+<!-- #region -->
+Remember that each point on the scatterplot above represents one patient.
+
+From the graph you can see that, for each patient:
+
+*If the prediction is good, then the likelihood score is high e.g.:*
+
+* If the patient's appetite is 'good', and the predicted probability is near 1, then the likelihood is high.
+
+* If the patient's appetite is 'poor', and the predicted probability is near 0, then the likelihood is high.
+
+
+*If the prediction is bad, then the likelihood score is low e.g.:*
+
+* If the patient's appetite is 'good', but the predicted probability is near 0, then the likelihood is low.
+
+* If the patient's appetite is 'poor', but the predicted probability is near 1, then the likelihood is low.
+<!-- #endregion -->
 
 Now we know the probabilities of each actual 0 and 1 label, we can get a
 measure of how *likely* the *combination* of all these labels are, given these
@@ -1027,7 +1127,7 @@ slope of 0.8.
 
 Before we do, there is one extra wrinkle, that we will solve in another way
 further down the notebook.  At the moment the likelihood values we are
-returning are very small - in the order of $10^{13}$.  We expect scores for
+returning are very small - in the order of $10^{-13}$.  We expect scores for
 different plausible lines to differ from each other by an even smaller number.
 By default, `minimize` will treat these very small differences as
 insignificant.  We can tell `minimize` to pay attention to these tiny
@@ -1037,7 +1137,7 @@ differences by passing a very small value to the `tol` parameter (`tol` for
 ```{python}
 mr_ML = minimize(simple_ml_logit_cost,  # Cost function
                  [-7, 0.8],  # Guessed intercept and slope
-                 args=(hemoglobin, appetite_d),  # x and y values
+                 args=(hemoglobin, appetite_dummy),  # x and y values
                  tol=1e-16)  # Attend to tiny changes in cost function values.
 # Show the result.
 mr_ML
@@ -1176,7 +1276,7 @@ Use the new cost function:
 ```{python}
 mr_MLL = minimize(mll_logit_cost,  # Cost function
                   [-7, 0.8],  # Guessed intercept and slope
-                  args=(hemoglobin, appetite_d),  # x and y values
+                  args=(hemoglobin, appetite_dummy),  # x and y values
                   )
 # Show the result.
 mr_MLL
