@@ -288,13 +288,11 @@ The linear regression line looks plausible, as far as it goes, but it has
 several unhappy features for our task of predicting the `appetite_d` 0 / 1
 values.
 
-It looks like the predictions are getting it right that the value of
-`appetite_d` is more likely to be 1 (meaning "good") at higher values of
-`hemoglobin`.
-
-The prediction line slopes upward as `hemoglobin` gets higher, indicating that
-the probability of good appetite gets higher as the hemoglobin concentration
-rises, across patients.
+One thing to like about the line is that the predictions are right to suggest
+that the value of `appetite_d` is more likely to be 1 (meaning "good") at
+higher values of `hemoglobin`.  Also, the prediction line slopes upward as
+`hemoglobin` gets higher, indicating that the probability of good appetite gets
+higher as the hemoglobin concentration rises, across patients.
 
 However, when the `hemoglobin` gets higher than about 15.5, linear regression
 starts to predict a value for `appetite_d` that is greater than 1 - which, of
@@ -600,12 +598,13 @@ ax1.set_ylabel('Log odds-ratio');
 
 ## The logit transform and its inverse
 
-The logit transformation from the sigmoid curve to the straight line is:
+The logit transformation from the sigmoid curve to the straight line consists
+of two steps:
 
 * Convert probability to odd-ratios.
 * Take the log of the result.
 
-Our full logit transformation is therefore:
+The full logit transformation is therefore:
 
 ```{python}
 def logit(p):
@@ -615,7 +614,7 @@ def logit(p):
     return np.log(odds_ratios)
 ```
 
-Here's the original sigmoid predictions and the predictions with the `logit` transform applied:
+Here are the original sigmoid predictions and the predictions with the `logit` transform applied:
 
 ```{python tags=c("hide-cell")}
 fig, axes = plt.subplots(1, 2)
@@ -640,9 +639,9 @@ refresher](logarithms_refreshed) page):
 
 ```{python}
 # np.exp reverses the effect of np.log.
-original_vals = np.array([1, 0.5, 3, 6, 0.1])
-vals_back = np.exp(np.log(original_vals))
-vals_back
+some_values = np.array([1, 0.5, 3, 6, 0.1])
+values_back = np.exp(np.log(some_values))
+values_back
 ```
 
 You have seen above that there is a simple formula to go from odds ratios to
@@ -732,10 +731,13 @@ plt.legend();
 
 You may now see how we could use `minimize` with a slope and intercept.
 
-Remember that `minimize` needs a *cost function* that takes some parameters - in our case, the intercept and slope - and returns a score, or cost for the parameters.
+Remember that `minimize` needs a *cost function* that takes some parameters -
+in our case, the intercept and slope — and returns a score, or cost for the
+parameters.
 
 In the `ss_any_line` cost function above, the score it returns is just the sum
-of squared prediction errors from the line.  But the cost function can do anything it likes to generate a score from the line.
+of squared prediction errors from the line.  But the cost function can do
+anything it likes to generate a score from the line.
 
 In our case, we're going to make a cost function that takes the intercept and
 slope, and generates predictions using the intercept and slope and `hemoglobin`
@@ -778,19 +780,6 @@ sigmoid_score = np.sum(sigmoid_error ** 2)
 sigmoid_score
 ```
 
-To build the cost function, we first make a function to calculate the predicted
-p values from a slope and intercept and the x-axis values we are predicting
-from:
-
-```{python}
-def params2pps(intercept, slope, x):
-    """ Calculate predicted probabilities of 1 for each observation.
-    """
-    # Predicted log odds of being in class 1.
-    predicted_log_odds = intercept + slope * x
-    return inv_logit(predicted_log_odds)
-```
-
 Next we make the cost function that minimize will use.  It must accept an array
 of parameters (an intercept and slope), and calculate the sum of squares error,
 using the predicted p-values:
@@ -799,8 +788,10 @@ using the predicted p-values:
 def ss_logit(c_s, x_values, y_values):
     # Unpack intercept and slope into values.
     intercept, slope = c_s
-    # Predicted p values on sigmoid
-    pps = params2pps(intercept, slope, x_values)
+    # Predicted values for log-odds straight line.
+    predicted_log_odds = intercept + slope * x_values
+    # Predicted p values on sigmoid.
+    pps = inv_logit(predicted_log_odds)
     # Prediction errors.
     sigmoid_error = y_values - pps
     # Sum of squared error
@@ -832,7 +823,10 @@ First get the sigmoid predictions from this line:
 
 ```{python}
 logit_ss_inter, logit_ss_slope = min_res_logit.x
-logit_ss_pps = params2pps(logit_ss_inter, logit_ss_slope, hemoglobin)
+# Predicted values on log-odds straight line.
+predicted_log_odds = logit_ss_inter + logit_ss_slope * hemoglobin
+# Predicted p values on sigmoid.
+logit_ss_pps = inv_logit(predicted_log_odds)
 ```
 
 Then plot:
