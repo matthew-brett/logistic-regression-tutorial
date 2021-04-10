@@ -1009,26 +1009,43 @@ We can therefore calculate the predicted probability of each 0 / 1 label in the
 data frame like this:
 
 ```{python}
-# Predicted probability of 0.
+# A pandas series containing the predicted probability of 0 (poor appetite) for each patient.
 pp_of_0 = 1 - pp_of_1
+
 # The next line sets all the label == 1 values correctly, but
-# the label == 0 values are now incorrect.
-pp_of_label = pp_of_1.copy()
-# Set the label == 0 values correctly.
+# the label == 0 values are now incorrect (e.g this array current contains only the probability of label == 1).
+pp_of_correct_label = pp_of_1.copy()
+
+# Create a Boolean array which is True where appetite_dummy == 0, e.g. True for patients with "poor" appetite
 poor_appetite = appetite_dummy == 0
-pp_of_label[poor_appetite] = pp_of_0[poor_appetite]
+
+# for the patients who actually had a 0 label ("poor" appetite), get the predicted probability of a 0 label
+pp_of_correct_label[poor_appetite] = pp_of_0[poor_appetite]
+
 # Put this into the data frame for display
-hgb_predicted['pp_of_label'] = pp_of_label
+hgb_predicted['pp_of_correct_label'] = pp_of_correct_label
 hgb_predicted
 ```
 
-There's a fancy short-cut to the several lines above, that relies on the fact
-that multiplying by 0 gives 0.  We can form the `pp_of_label` column by first
+<!-- #region -->
+Let's take a step back and assess what's going on here. By default, logistic regression predicts the probability that a given observation falls into class 1 of the binary outcome variable. For our dataset, this is the probability that an observation has an `appetite_dummy` score of 1 (e.g. the probability that a patient has "good" appetite). These predictions are contained in the `pp_of_1` column. 
+
+By contrast, rather than just showing us the probability of a label of 1, the `pp_of_correct_label` column tells us the predicted probability of the `appetite_dummy` score that each patient actually has:
+
+* If the patient actually has a "good" appetite (e.g. their `appetite_dummy` label is 1), then the `pp_of_correct_label` shows the predicted probability of an `appetite_dummy` score of 1. 
+
+
+* If the patient has a "poor" appetite, (e.g. their `appetite_dummy` label is 0), then the `pp_of_correct_label` shows the predicted probability of an `appetite_dummy` score of 0. 
+
+
+There's a fancy short-cut to the several lines of code in the cell above, that relies on the fact
+that multiplying by 0 gives 0.  We can form the `pp_of_correct_label` column by first
 multiplying the 0 / 1 label column by the `pp_of_1`.  This correctly sets the
-`pp_of_label` values for labels of 1, and sets the remainder to 0.  Then we
+`pp_of_correct_label` values for labels of 1, and sets the remainder to 0.  Then we
 reverse the 0 / 1 labels by subtracting from 1, and multiply by `pp_of_0` to
 set the 0 values to their correct values.  Adding these two results gives us
 the correct set of values for both 1 and 0 labels.
+<!-- #endregion -->
 
 ```{python}
 # Set label == 1 values to predicted p, others to 0
@@ -1038,7 +1055,7 @@ neg_ps = (1 - appetite_dummy) * pp_of_0
 # Combine by adding.
 final = pos_ps + neg_ps
 # This gives the same result as the code cell above:
-hgb_predicted['pp_of_label_fancy'] = final
+hgb_predicted['pp_of_correct_label_fancy'] = final
 hgb_predicted
 ```
 
@@ -1051,15 +1068,15 @@ hgb_predicted['pp_again'] = final_again
 hgb_predicted
 ```
 
-When the `pp_of_label` values are near 1, this means the result was close to the prediction.  When they are near 0, it means the result was unlike the prediction.
+When the `pp_of_correct_label` values are near 1, this means the result was close to the prediction.  When they are near 0, it means the result was unlike the prediction.
 
 The scatterplot below shows this:
 
 ```{python}
 good_appetites = hgb_predicted[hgb_predicted['appetite_dummy'] == 1].copy()
 poor_appetites = hgb_predicted[hgb_predicted['appetite_dummy'] == 0].copy()
-plt.scatter(good_appetites['pp_of_1'], good_appetites['pp_of_label'], color = 'red', label = 'good appetite (1)')
-plt.scatter(poor_appetites['pp_of_1'], poor_appetites['pp_of_label'], color = 'blue', label = 'poor appetite (0)')
+plt.scatter(good_appetites['pp_of_1'], good_appetites['pp_of_correct_label'], color = 'red', label = 'good appetite (1)')
+plt.scatter(poor_appetites['pp_of_1'], poor_appetites['pp_of_correct_label'], color = 'blue', label = 'poor appetite (0)')
 plt.xlabel('Predicted probability of being in class 1')
 plt.ylabel('Likelihood')
 plt.legend(loc = 'upper center' );
@@ -1082,12 +1099,11 @@ From the graph you can see that, for each patient:
 * If the patient's appetite is 'good', but the predicted probability is near 0, then the likelihood is low.
 
 * If the patient's appetite is 'poor', but the predicted probability is near 1, then the likelihood is low.
-<!-- #endregion -->
 
 Now we know the probabilities of each actual 0 and 1 label, we can get a
 measure of how *likely* the *combination* of all these labels are, given these
 predictions. We do this by *multiplying* all the probabilities in
-`pp_of_label`.  When the probabilities in `pp_of_label` are all fairly near 1,
+`pp_of_correct_label`.  When the probabilities in `pp_of_correct_label` are all fairly near 1,
 multiplying them will give a number that is not very small.  When some or many
 of the probabilities are close to 0, the multiplication will generate a very
 small number.
@@ -1100,16 +1116,17 @@ larger, and closer to 1.  When the predictions are not close, the likelihood
 will be low, and closer to 0.
 
 Here is the likelihood for our intercept of -7 and slope of 0.8.
+<!-- #endregion -->
 
 ```{python}
 # np.prod multiplies each number to give the product of all the numbers.
-likelihood = np.prod(pp_of_label)
+likelihood = np.prod(pp_of_correct_label)
 likelihood
 ```
 
 This is a very small number.  Likelihoods are often close to 0 with a
 reasonable number of points, and somewhat inexact prediction, because there
-tend to be a reasonable number of small p values in `pp_of_labels`.  The
+tend to be a reasonable number of small p values in `pp_of_correct_label`.  The
 question is - do other values for the intercept and slope give smaller or
 larger values for the likelihood?
 
@@ -1132,8 +1149,8 @@ def simple_ml_logit_cost(intercept_and_slope, x, y):
     predicted_log_odds = intercept + slope * x
     pp_of_1 = inv_logit(predicted_log_odds)
     # Calculate predicted probabilities of actual labels.
-    pp_of_labels = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
-    likelihood = np.prod(pp_of_labels)
+    pp_of_correct_label = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
+    likelihood = np.prod(pp_of_correct_label)
     # Ask minimize to find maximum by adding minus sign.
     return -likelihood
 ```
@@ -1224,9 +1241,9 @@ We can use this same trick to calculate our likelihood by adding logs instead
 of multiplying the probabilities directly:
 
 ```{python}
-print('Likelihood with product of array', np.prod(pp_of_label))
+print('Likelihood with product of array', np.prod(pp_of_correct_label))
 # The log-add-unlog version.
-logs_of_pp = np.log(pp_of_label)
+logs_of_pp = np.log(pp_of_correct_label)
 log_likelihood = np.sum(logs_of_pp)
 print('Likelihood with log-add-unlog', np.exp(log_likelihood))
 ```
@@ -1280,9 +1297,9 @@ def mll_logit_cost(intercept_and_slope, x, y):
     predicted_log_odds = intercept + slope * x
     pp_of_1 = inv_logit(predicted_log_odds)
     # Calculate predicted probabilities of actual labels.
-    pp_of_labels = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
+    pp_of_correct_label = y * pp_of_1 + (1 - y) * (1 - pp_of_1)
     # Use logs to calculate log of the likelihood
-    log_likelihood = np.sum(np.log(pp_of_labels))
+    log_likelihood = np.sum(np.log(pp_of_correct_label))
     # Ask minimize to find maximum by adding minus sign.
     return -log_likelihood
 ```
@@ -1402,10 +1419,10 @@ these questions.
 
   Reflect, using the reasoning here, then try it and see.
 
-* Consider the expression `np.sum(np.log(pp_of_labels))` in the
+* Consider the expression `np.sum(np.log(pp_of_correct_label))` in the
   `mll_logit_cost` cost function.  This is using `np.log`, which is log to the
   base `np.e`.  Consider what would happen if you change this expression to
-  `np.sum(np.log10(pp_of_labels))` (log to the base 10).  What would happen to:
+  `np.sum(np.log10(pp_of_correct_label))` (log to the base 10).  What would happen to:
 
   * The best-fit p values predictions returned via `minimize`?
   * The slope and intercept of the best-fit log-odds straight line?
