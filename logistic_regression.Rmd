@@ -496,6 +496,8 @@ In our dataset the event of interest is a patient having a 'good' appetite, and 
 
 $$\frac{139}{19} = 7.33 = \frac{\text{number of patients with good appetite}}{\text{number of patients with poor appetite}} $$.
 
+Based on this odds ratio, it is 7.33 times more likely that a patient selected at random would have a "good" appetite rather than "poor" appetite.
+
 We can also express the odds ratio via the proportion of events, rather than the number of events:
 
 $$\frac{139/158}{19/158} = 7.33 = \frac{\text{proportion of patients with good appetite}}{\text{proportion of patients with poor appetite}} $$.
@@ -549,12 +551,26 @@ poor = np.append(poor, n - num_good)
 odds_ratios =  good/poor
 illus = pd.DataFrame({'num. patients with good appetite': good.astype('int'),
              'num. patients with poor appetite': poor.astype('int'),
-             'odds ratio': odds_ratios})
-illus.index = np.repeat('', len(illus))
+             'odds ratio': np.round(odds_ratios,2)})
 illus
 ```
 
-We have just seen that `odds_ratio = p / (1 - p)`. If there are no events of interest, then `p == 0` and the odds ratio is 0, as you can see from the first row of the dataframe above. 
+The output of the cell below shows the verbal interpretation of row 6 of the dataframe above. If you are using an interactive version of this notebook, to interpret a different row of the dataframe, change the value of `row` and re-run the cell below:
+
+```{python}
+# set the row of the dataframe above that you want to interpret (up to 16)
+row = 6
+    
+# ignore this code, it just generates the printout
+if illus['odds ratio'].iloc[row] > 1:
+        print('\nIf there are '+str(illus['num. patients with good appetite'].iloc[row])+' patients with "good" appetite, and '+str(illus['num. patients with poor appetite'].iloc[row])+' patients with "poor" appetite, then the odds ratio is '+str(illus['odds ratio'].iloc[row])+'.')
+        print('\nThis means that "good" appetite is '+str(illus['odds ratio'].iloc[row])+' times more likely than "poor" appetite.')
+if illus['odds ratio'].iloc[row] < 1:
+        print('\nIf there are '+str(illus['num. patients with good appetite'].iloc[row])+' patients with "good" appetite, and '+str(illus['num. patients with poor appetite'].iloc[row])+' patients with "poor" appetite, then the odds ratio is '+str(illus['odds ratio'].iloc[row])+'.')
+        print('\nThis means that "good" appetite is '+str(illus['odds ratio'].iloc[row])+' times as likely as "poor" appetite.')
+```
+
+We have seen that `odds_ratio = p / (1 - p)`. If there are no events of interest, then `p == 0` and the odds ratio is 0, as you can see from the first row of the dataframe above. 
 
 If all of the events are events of interest (as in the final row of the dataframe above), then `p == 1` and this gives:
 
