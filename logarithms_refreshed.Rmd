@@ -140,7 +140,7 @@ that $10^0$ is equal to 1. This is the case because the way we calculate divisio
 10**2
 ```
 
-A consquence of this is that for divisions like $10^2/10^2$, we calculate $10^2/10^2 = 10^{2-2} = 10^0$. Since anything (in this case 10^2) divided by itself must equal 1, this means that $10^0$ equals 1.
+A consquence of this is that for divisions like $10^2/10^2$, we calculate $10^2/10^2 = 10^{2-2} = 10^0$. Since anything (in this case $10^2$) divided by itself must equal 1, this means that $10^0$ equals 1.
 
 Therefore log10 of 1 is 0 (as the log10 of 1 is asking 'what power would I have to raise 10 to in order to get 1?'):
 
