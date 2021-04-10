@@ -939,11 +939,11 @@ hgb_predicted
 
 There's a fancy short-cut to the several lines above, that relies on the fact
 that multiplying by 0 gives 0.  We can form the `pp_of_label` column by first
-multiplying the 0 / 1 label column by the `pp_of_1`.  This correctly sets the
-`pp_of_label` values for labels of 1, and sets the remainder to 0.  Then we
-reverse the 0 / 1 labels by subtracting from 1, and multiply by `pp_of_0` to
-set the 0 values to their correct values.  Adding these two results gives us
-the correct set of values for both 1 and 0 labels.
+multiplying the 0 / 1 label column values by the values in `pp_of_1`.  This
+correctly sets the `pp_of_label` values for labels of 1, and sets the
+remainder to 0. Then we reverse the 0 / 1 labels by subtracting from 1, and
+multiply by `pp_of_0` to set the 0 values to their correct values.  Adding
+these two results gives us the correct set of values for both 1 and 0 labels.
 
 ```{python}
 # Set label == 1 values to predicted p, others to 0
@@ -1027,7 +1027,7 @@ slope of 0.8.
 
 Before we do, there is one extra wrinkle, that we will solve in another way
 further down the notebook.  At the moment the likelihood values we are
-returning are very small - in the order of $10^{13}$.  We expect scores for
+returning are very small - in the order of $10^{-13}$.  We expect scores for
 different plausible lines to differ from each other by an even smaller number.
 By default, `minimize` will treat these very small differences as
 insignificant.  We can tell `minimize` to pay attention to these tiny
@@ -1080,7 +1080,7 @@ Here we show a very important property of the logarithm transform:
 
 ```{python}
 print('Multiplying two numbers', 11 * 15)
-print('Adding, inverting the logs', np.exp(np.log(11) + np.log(15)))
+print('Take logs, add logs, unlog', np.exp(np.log(11) + np.log(15)))
 ```
 
 What you see here is that we get (almost) the same answer if we:
