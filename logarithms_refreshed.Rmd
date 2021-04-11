@@ -7,7 +7,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.8.2
+      jupytext_version: 1.10.1
   kernelspec:
     display_name: Python 3
     language: python
@@ -130,10 +130,16 @@ np.log10(np.sqrt(10))
 ```
 
 It is a bit difficult to think about what $10^0$ might mean, but the rule is
-that $10^0$ is equal to 1, and therefore log10 of 1 is 0:
+that $10^0$ is equal to 1 (we will justify this rule towards the end of this notebook). 
+
+Therefore log10 of 1 is 0 (as the log10 of 1 is asking 'what power would I have to raise 10 to in order to get 1?'):
 
 ```{python}
 np.log10(1)
+```
+
+```{python}
+10**0
 ```
 
 Exponents can be negative.  A negative exponent gives the equivalent calculation to taking the power to the exponent without the minus sign, and then dividing into 1 - like this:
@@ -185,7 +191,7 @@ print('e cubed', np.e ** 3)
 As you would expect, `np.log` returns the exponent we need to apply to $e$ to recreate the input numbers:
 
 ```{python}
-np.log([np.e, np.e ** 2, np.e ** 3])
+np.log([2.718281828459045, 7.3890560989306495, 20.085536923187664])
 ```
 
 As for all log bases, log of 1 is 0, and numbers less than 1 give negative log
@@ -414,4 +420,53 @@ loge_sum = np.sum(loge_arr)
 print('Exponents added:', loge_sum)
 # unlog
 print('Raised to the power of np.e:', np.e ** loge_sum)
+```
+
+## Why does anything raised to the power of 0 equal 1? AKA why log(1) always equals 0
+
+1 is the first element in the `arr` array above. `np.log(arr)` transforms the first element into a 0. The answer will be 0 whenever 1 is log-transformed, for instance in the first step of the log-add-unlog trick. Remember that the log of 1 is asking the question "what power would I have to raise the base to, in order to get 1?". 
+
+```{python}
+# the base 10 log of 1 (e.g. "what power would I have to raise 10 to, in order to get 1?")
+np.log10(1) 
+```
+
+```{python}
+# 10 to the power of 0
+
+10**0 
+```
+
+As we mentioned earlier anything raised to the power of 0 equals 1. 
+
+```{python}
+print(np.e**0)
+print(2**0)
+print(10**0)
+print(1/800**0)
+print(124638210**0)
+```
+
+This is the case because the way we calculate divisions like $10^4/10^2$ is by subtracting the bottom exponent from the top exponent e.g. $10^4/10^2 = 10^{4-2} = 10^2$. 
+
+```{python}
+10**4/10**2
+```
+
+```{python}
+10**2
+```
+
+A consquence of this is that for divisions like $10^2/10^2$, we calculate $10^2/10^2 = 10^{2-2} = 10^0$. Since anything (in this case $10^2$) divided by itself must equal 1, this means that $10^0$ equals 1.
+
+This means that the log of 1 (to any base) is 0:
+
+```{python}
+print(np.log(1))
+print(np.log2(1))
+print(np.log10(1))
+```
+
+```{python}
+
 ```
