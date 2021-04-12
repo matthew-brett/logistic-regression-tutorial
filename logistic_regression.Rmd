@@ -499,17 +499,11 @@ Notice the odds ratio is greater than one, because `p` was greater than 0.5. An
 odds ratio of greater than one means the event of interest is more likely to
 happen than the alternative.  An odds ratio of less than one means p was less
 than 0.5, and the event of interest is less likely to happen than the
-alternative.   A p value of 0 gives an odds ratio of 0.  A p value of 1 gives:
-
-```{python tags=c("raises-exception")}
-1 / (1 - 1)
-```
-
-This is either an error (as it is here when we do the calculation with Python's standard integers) or Infinity, when we do the calculation with Numpy:
+alternative.   A p value of 0 gives an odds ratio of 0.  As the p value gets close to 1, the odds ratio gets very large.
 
 ```{python}
-one = np.array(1)  # Make an Numpy array containing 1
-one / (one - one)
+p = 0.999999
+p / (1 - p)
 ```
 
 We can also convert from odds ratios to p values.  Remember the odds ratio is
@@ -1125,25 +1119,40 @@ goes up when likelihood goes up, and goes down when likelihood goes down,
 `minimize` will still find the same parameters to minimize this cost function.
 
 Specifically we want the value that comes back from the cost function to vary
-[monotonically](https://en.wikipedia.org/wiki/Monotonic_function) with the
-`likelihood`.  Consider any two pairs of (intercept, slope). Call the first
-pair `p1` and the second pair `p2`.  Call the likelihoods for `p1` and `p2`:
-`L2` and `L2` respectively.  Say we've got another way of calculating a value
-for `p1` and `p2`, and the values that come back are `M1` and `M2`
-respectively.  We can swap this other way into our cost function as long as
-it is always true that: when `L1 > L2` then `M1 > M2`; when `L1 < L2` then `M1
-< M2`; and when `L1 == L2`, `M1 == M2`.  In that case we call our new
-calculation generating `M1` and `M2` *monotonic* with respect to the original
-calculation generating `L1` and `L2`.  In our case this original calculation is
-likelihood. The new monotonic calculation is the *log likelihood*.
+[monotonically](https://en.wikipedia.org/wiki/Monotonic_function) with respect
+to the `likelihood`.  Consider any two pairs of (intercept, slope). Call the
+first pair `p1` and the second pair `p2`.  Call the likelihoods for `p1` and
+`p2`: `L2` and `L2` respectively.  Say we've got another way of calculating a
+value for `p1` and `p2`, and the values that come back from the new calculation
+are `N1` and `N2` respectively.  We can swap this new way into our cost
+function, and get the same parameters back from `miminize`, as long as it is
+always true that:
 
-You may be able to see that if the likelihood goes up, then the log of
-likelihood will also go up, and vice versa, so the log of the likelihood is monotonic with respect to the likelihood, and we can use it instead of the likelihood, in our cost function.
+* when `L1 > L2` then `N1 > N2`;
+* when `L1 < L2` then `N1 < N2`; and
+* when `L1 == L2`, `N1 == N2`.
+
+In that case we call our new calculation generating `N1` and `N2` *monotonic*
+with respect to the original calculation generating `L1` and `L2`.  In our case
+this original calculation is likelihood. The new monotonic calculation is the
+*log likelihood*.
+
+In the plot below, you can see it is true that when the likelihood goes up,
+then the log of the likelihood will also go up, and vice versa, so the log the
+likelihood *is* monotonic with respect to the likelihood, and we can use it
+instead of the likelihood, in our cost function.
+
+```{python}
+likelihood_values = np.linspace(0, 1, 1000)
+plt.plot(likelihood_values, np.log(likelihood_values))
+plt.xlabel('Likelihood')
+plt.ylabel('Log likelihood');
+```
 
 This means that our cost function does not have to do the last nasty unlog step
-above, that generates the tiny number.  We can just return the (minus of the)
-log of the likelihood.  The log of the likelihood turns out to be a manageable
-negative number, even when the resulting likelihood is tiny.
+above, that generates the tiny value for likelihood.  We can just return the
+(minus of the) log of the likelihood.  The log of the likelihood turns out to
+be a manageable negative number, even when the resulting likelihood is tiny.
 
 ```{python}
 log_likelihood
