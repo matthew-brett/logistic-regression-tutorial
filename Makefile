@@ -1,7 +1,13 @@
-NOTEBOOKS:=$(patsubst %.Rmd,%.ipynb,$(wildcard *.Rmd))
+RMDS=$(wildcard *.Rmd)
+IPYNBS:=$(patsubst %.Rmd,%.ipynb,$(RMDS))
 
-notebooks: $(NOTEBOOKS)
+notebooks: $(IPYNBS)
 
 %.ipynb: %.Rmd
 	# Build notebook
 	jupytext $< --execute --to ipynb -o $@
+
+clean:
+	rm $(IPYNBS)
+
+rebuild: clean notebooks
