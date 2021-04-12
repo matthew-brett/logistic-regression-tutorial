@@ -1120,13 +1120,15 @@ goes up when likelihood goes up, and goes down when likelihood goes down,
 
 Specifically we want the value that comes back from the cost function to vary
 [monotonically](https://en.wikipedia.org/wiki/Monotonic_function) with respect
-to the `likelihood`.  Consider any two pairs of (intercept, slope). Call the
-first pair `p1` and the second pair `p2`.  Call the likelihoods for `p1` and
-`p2`: `L2` and `L2` respectively.  Say we've got another way of calculating a
-value for `p1` and `p2`, and the values that come back from the new calculation
-are `N1` and `N2` respectively.  We can swap this new way into our cost
-function, and get the same parameters back from `miminize`, as long as it is
-always true that:
+to the likelihood.  Consider any two pairs of (intercept, slope). Call the
+first pair `p1` and the second pair `p2`.  Say `p1` gives a likelihood value of
+`L1` and `p2` gives a likelihood value of `L2`. Now say we've got another way
+of calculating a value for `p1` and `p2`, and the corresponding values that
+come back from the new calculation are `N1` and `N2`.  Remember `miminize` is
+searching for the (intercept, slope) pair that gives the lowest value from the
+cost function.  So, we can swap the new calculation into our cost function, and
+get the same parameters back from `miminize`, as long as it is always true
+that:
 
 * when `L1 > L2` then `N1 > N2`;
 * when `L1 < L2` then `N1 < N2`; and
