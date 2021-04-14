@@ -422,6 +422,145 @@ print('Exponents added:', loge_sum)
 print('Raised to the power of np.e:', np.e ** loge_sum)
 ```
 
+## More on negative exponents
+
+Recall that we can think of positive exponents as shorthands for multiplication:
+
+$
+ 10^2 = 10 * 10
+$
+
+This could also be written as:
+
+$
+10^2 = 1 * 10 * 10
+$
+
+The value of the exponent (in this case 2) tells us the number of times 1 gets multiplied by the base.
+
+We think of negative exponents in a similar way - as shorthands for division:
+
+$
+10^{-2} = 1 ÷ 10 ÷ 10
+$
+
+```{python}
+10**-2
+```
+
+```{python}
+(1/10)/10
+```
+
+The value of the negative exponent tells us how many times 1 gets divided by the base:
+
+$
+10^{-3} = 1 ÷ 10 ÷ 10 ÷ 10
+$
+
+```{python}
+10**-3
+```
+
+```{python}
+# one divided by 10 three times
+((1/10)/10)/10
+```
+
+For any base with a negative exponent, we can also write it as 1 divided by the base with a positive exponent of the same value e.g.:
+
+$
+10^{-3} = 1 ÷ 10^{3}
+$
+
+```{python}
+1/10**3
+```
+
+In fact, for any number (represented as $n$):
+
+$
+\text{base}^{-n} == 1/\text{base}^{+n}
+$
+
+So for instance:
+
+$
+10^{-4} = 1/10^{4}
+$
+
+
+```{python}
+10**-4
+```
+
+```{python}
+1/10**4
+```
+
+Put into words, a negative exponent $n$ means '1 divided by the base $n$ times'.
+
+```{python}
+print('10 to the minus 4 = ', 10**-4)
+print('1 divided by 10 four times =',(((1/10)/10)/10)/10)
+```
+
+## Dividing is subtracting with logarithms
+
+Once we have transformed two numbers to logs, if we subtract the logs
+, then this is the same as performing division on the original numbers.
+
+Once again, this is easiest to see by example.  Here we divide two numbers:
+
+```{python}
+y = 1000/100
+y
+```
+
+We can do the same operation by:
+
+* Taking the logarithm transform of the numbers.
+* Subtracting the two logarithms.
+* Inverting the logarithm transform by raising the result to the corresponding
+  power.
+
+We call this the log-subtract-unlog procedure.  Using this procedure, we replace
+division by subtraction of logs.
+
+```{python}
+# log of input numbers.
+v1 = np.log10(100)
+v2 = np.log10(1000)
+# add the logs
+v3 = v2 - v1
+# unlog by raising to the power of the result.
+y_from_log = 10 ** v3
+y_from_log
+```
+
+If we divide a number by itself, we get 1:
+
+```{python}
+100/100
+```
+
+Given that subtracting logs is the same as dividing the original numbers, this is the same as if we
+subtract a logged number from itself, and then unlog the result:
+
+```{python}
+v1 - v1
+```
+
+```{python}
+10**(v1-v1)
+```
+
+This is the same as raising the number to the power of 0:
+
+```{python}
+v1**0
+```
+
 ## Why does anything raised to the power of 0 equal 1? AKA why log(1) always equals 0
 
 1 is the first element in the `arr` array above. `np.log(arr)` transforms the first element into a 0. The answer will be 0 whenever 1 is log-transformed, for instance in the first step of the log-add-unlog trick. Remember that the log of 1 is asking the question "what power would I have to raise the base to, in order to get 1?". 
