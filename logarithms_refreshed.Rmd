@@ -436,7 +436,11 @@ $
 10^2 = 1 * 10 * 10
 $
 
-The value of the exponent (in this case 2) tells us the number of times 1 gets multiplied by the base.
+The value of the exponent (in this case 2) tells us the number of times 1 gets multiplied by the base. This is why raising a base to the power of 1 always equals the base; because $10^1$ means 'multiply 1 by 10 once':
+
+$
+10^{1} = 1 * 10 = 10
+$
 
 We think of negative exponents in a similar way - as shorthands for division:
 
@@ -463,39 +467,8 @@ $
 ```
 
 ```{python}
-# one divided by 10 three times
+# 1 divided by 10 three times
 ((1/10)/10)/10
-```
-
-For any base with a negative exponent, we can also write it as 1 divided by the base with a positive exponent of the same value e.g.:
-
-$
-10^{-3} = 1 ÷ 10^{3}
-$
-
-```{python}
-1/10**3
-```
-
-In fact, for any number (represented as $n$):
-
-$
-\text{base}^{-n} == 1/\text{base}^{+n}
-$
-
-So for instance:
-
-$
-10^{-4} = 1/10^{4}
-$
-
-
-```{python}
-10**-4
-```
-
-```{python}
-1/10**4
 ```
 
 Put into words, a negative exponent $n$ means '1 divided by the base $n$ times'.
@@ -507,8 +480,7 @@ print('1 divided by 10 four times =',(((1/10)/10)/10)/10)
 
 ## Dividing is subtracting with logarithms
 
-Once we have transformed two numbers to logs, if we subtract the logs
-, then this is the same as performing division on the original numbers.
+Once we have transformed two numbers to logs, if we subtract the logs, then this is the same as performing division on the original numbers.
 
 Once again, this is easiest to see by example.  Here we divide two numbers:
 
@@ -538,6 +510,53 @@ y_from_log = 10 ** v3
 y_from_log
 ```
 
+We can do this same calculation just using exponents, and arrive at the same answer:
+
+$$
+y = 1000 ÷ 100
+$$
+
+
+
+```{python}
+1000/100
+```
+
+We can also write this as:
+
+$$
+y = 10^3 ÷ 10^2
+$$
+
+```{python}
+10**3/10**2
+```
+
+We can also write out the raised-to-the-power parts longhand, like this:
+
+$$
+y = 1 ÷ (10 ÷ 10 ÷ 10) ÷ (10 ÷ 10)
+$$
+
+```{python}
+1/(10/10/10)/(10/10)
+```
+
+Dropping the brackets, that have no effect, we see that this is also equal to:
+
+$$
+y = 10^{3 - 2} = 10^1
+$$
+
+
+```{python}
+10**(3-2)
+```
+
+```{python}
+10**1
+```
+
 If we divide a number by itself, we get 1:
 
 ```{python}
@@ -548,11 +567,12 @@ Given that subtracting logs is the same as dividing the original numbers, this i
 subtract a logged number from itself, and then unlog the result:
 
 ```{python}
-v1 - v1
+np.log(100) - np.log(100)
 ```
 
 ```{python}
-10**(v1-v1)
+# unlogging the value in the cell above
+10**(np.log(100)-np.log(100))
 ```
 
 This is the same as raising the number to the power of 0:
@@ -563,7 +583,14 @@ v1**0
 
 ## Why does anything raised to the power of 0 equal 1? AKA why log(1) always equals 0
 
-1 is the first element in the `arr` array above. `np.log(arr)` transforms the first element into a 0. The answer will be 0 whenever 1 is log-transformed, for instance in the first step of the log-add-unlog trick. Remember that the log of 1 is asking the question "what power would I have to raise the base to, in order to get 1?". 
+1 is the first element in the `arr` array which we used above. `np.log(arr)` transforms the first element into a 0. 
+
+```{python}
+print(arr)
+np.log(arr)
+```
+
+The answer will be 0 whenever 1 is log-transformed, for instance in the first step of the log-add-unlog trick. Remember that the log of 1 is asking the question "what power would I have to raise the base to, in order to get 1?". 
 
 ```{python}
 # the base 10 log of 1 (e.g. "what power would I have to raise 10 to, in order to get 1?")
@@ -579,7 +606,6 @@ np.log10(1)
 As we mentioned earlier anything raised to the power of 0 equals 1. 
 
 ```{python}
-print(np.e**0)
 print(2**0)
 print(10**0)
 print(1/800**0)
@@ -604,6 +630,61 @@ This means that the log of 1 (to any base) is 0:
 print(np.log(1))
 print(np.log2(1))
 print(np.log10(1))
+```
+
+Similarly, as we mentioned earlier, when we multiply two bases with exponents, we add the exponents, e.g.: $10^2 * 10^3 = 10^{2+3} = 10^5 = 100000$
+
+```{python}
+10**2 * 10**3
+```
+
+```{python}
+10**5
+```
+
+If one of the exponents is 0, this means we add 0 to the other exponent: $10^2 * 10^0= 10^{2+0} = 10^2 = 100$
+
+This is only possible if $10^0 = 1$.
+
+```{python}
+10**2 * 10**0
+```
+
+```{python}
+10**2 * 1
+```
+
+This has the consequence that, if we multiply two bases with exponents of the same absolute magnitude, but opposite signs, the answer must be 1: $10^2 * 10^-2 = 10^{2-2} = 10^0 = 1$
+
+This is only possible if the base with the negative exponent is the reciprocal of the base with the positive exponent (the reciprocal of a number is 1 divided by that number):
+
+```{python}
+10**2 * 10**-2
+```
+
+```{python}
+10**2 * 1/10**2
+```
+
+In fact, for any number (represented as $n$):
+
+$
+\text{base}^{-n} == 1/\text{base}^{+n}
+$
+
+So for instance:
+
+$
+10^{-4} = 1/10^{4}
+$
+
+
+```{python}
+10**-4
+```
+
+```{python}
+1/10**4
 ```
 
 ```{python}
