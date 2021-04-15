@@ -622,7 +622,7 @@ This is the case because the way we calculate divisions like $10^4/10^2$ is by s
 10**2
 ```
 
-A consquence of this is that for divisions like $10^2/10^2$, we calculate $10^2/10^2 = 10^{2-2} = 10^0$. Since anything (in this case $10^2$) divided by itself must equal 1, this means that $10^0$ equals 1.
+A consequence of this is that for divisions like $10^2/10^2$, we calculate $10^2/10^2 = 10^{2-2} = 10^0$. Since anything (in this case $10^2$) divided by itself must equal 1, this means that $10^0$ equals 1.
 
 This means that the log of 1 (to any base) is 0:
 
